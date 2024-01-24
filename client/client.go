@@ -10,13 +10,13 @@ import (
 
 type Client struct {
 	baseURL string
-	client  http.Client
+	client  *http.Client
 }
 
 func New(baseURL string) *Client {
 	return &Client{
 		baseURL: baseURL,
-		client:  *http.DefaultClient,
+		client:  http.DefaultClient,
 	}
 }
 
@@ -30,7 +30,9 @@ func (c *Client) Timeout(sec int) *Client {
 	return c
 }
 
-// health check end point
+/*
+Test your connectivity to our REST APIs using a health check endpoint
+*/
 func (c *Client) Health() (types.HealthResponse, error) {
 	resp, err := c.client.Get(c.baseURL + types.HEALTH_PATH)
 	if err != nil {
@@ -46,3 +48,20 @@ func (c *Client) Health() (types.HealthResponse, error) {
 
 	return healthResponse, nil
 }
+
+// // 24 hour ticker endpoint
+// func (c *Client) Ticker() (types.TickerResponse, error) {
+// 	resp, err := c.client.Get(c.baseURL + types.TICKER_PATH)
+// 	if err != nil {
+// 		return types.TickerResponse{}, err
+// 	}
+// 	defer resp.Body.Close()
+
+// 	var tickerResponse types.TickerResponse
+// 	err = json.NewDecoder(resp.Body).Decode(&tickerResponse)
+// 	if err != nil {
+// 		return types.TickerResponse{}, err
+// 	}
+
+// 	return tickerResponse, nil
+// }

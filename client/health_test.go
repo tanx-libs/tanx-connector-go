@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHealth(t *testing.T) {
+func TestClient_Health(t *testing.T) {
 	client := New(types.BASE_URL).Timeout(10)
 	assert.NotNil(t, client)
 
@@ -27,7 +27,7 @@ func TestHealth(t *testing.T) {
 	t.Logf("got = %+v", got)
 }
 
-func BenchmarkHealth(b *testing.B) {
+func BenchmarkClient_Health(b *testing.B) {
 	client := New(types.BASE_URL)
 
 	for i := 0; i < b.N; i++ {
@@ -35,7 +35,7 @@ func BenchmarkHealth(b *testing.B) {
 	}
 }
 
-func ExampleHealth() {
+func ExampleClient_Health() {
 	client := New(types.BASE_URL)
 	resp, err := client.Health()
 	if err != nil {
