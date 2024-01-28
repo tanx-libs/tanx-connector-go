@@ -1,47 +1,97 @@
 package client
 
 import (
-	"fmt"
-	"log"
+	"context"
+	"errors"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
-
-	"github.com/tanx-libs/tanx-connector-go/types"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tanx-libs/tanx-connector-go/types"
 )
 
 func TestClient_Health(t *testing.T) {
-	client := New(types.BASE_URL).Timeout(10)
-	assert.NotNil(t, client)
-
-	got, err := client.Health()
-	assert.NoError(t, err)
-
-	want := types.HealthResponse{
-		Status:  "success",
-		Message: "Working fine!",
-		Payload: "",
+	testCases := []struct {
+		name         string
+		roundTripper http.RoundTripper
+		timeout 	time.Duration
+		want         types.HealthResponse
+		wantErr      bool
+	}{
+		{
+			name: "Successful roundtrip",
+			roundTripper: &MockRoundTripper{
+				Response: &http.Response{
+					StatusCode: http.StatusOK,
+					Body: io.NopCloser(strings.NewReader(`{
+                        "status": "success",
+                        "message": "Working fine!",
+                        "payload": ""
+                    }`)),
+				},
+			},
+			want: types.HealthResponse{
+				Status:  "success",
+				Message: "Working fine!",
+				Payload: "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "HTTP protocol error",
+			roundTripper: &MockRoundTripper{
+				Err: errors.New("mock error"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "JSON decoding error",
+			roundTripper: &MockRoundTripper{
+				Response: &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(strings.NewReader(`{"status": 1}`)),
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Context timeout error",
+			roundTripper: &MockRoundTripper{
+				Response: &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(strings.NewReader(`{"status": "success"}`)),
+				},
+				Delay: time.Second * 2,
+			},
+			timeout: time.Nanosecond,
+			wantErr: true,
+		},
 	}
 
-	assert.Equal(t, want, got)
-	t.Logf("got = %+v", got)
-}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, err := New()
+			assert.NoError(t, err)
 
-func BenchmarkClient_Health(b *testing.B) {
-	client := New(types.BASE_URL)
+			client.httpClient.Transport = tc.roundTripper
 
-	for i := 0; i < b.N; i++ {
-		client.Health()
+			ctx := context.Background()
+			if tc.timeout != 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, tc.timeout)
+				defer cancel()
+			}
+
+			got, err := client.Health(ctx)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+		})
 	}
-}
-
-func ExampleClient_Health() {
-	client := New(types.BASE_URL)
-	resp, err := client.Health()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("%s", resp.Status)
-	// Output: success
 }
