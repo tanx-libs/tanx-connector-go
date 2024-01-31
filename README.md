@@ -4,12 +4,13 @@
 - [ ] Public unprotected endpoint
   - [X] JSON
     - [X] health
-    - [ ] ticker
-    - [ ] all ticker
-    - [ ] candle
-    - [ ] orderbook
-    - [ ] recent trade
-  - [ ] Websocket (exploring better dx for clints using the package)
+    - [X] ticker
+    - [X] all ticker
+    - [X] candle
+    - [ ] orderbook (doubt: server not accepting GET requests)
+    - [X] recent trade
+  
+  - [ ] Websocket
     - [X] trade streams
     - [ ] orderbook
     - [ ] kline

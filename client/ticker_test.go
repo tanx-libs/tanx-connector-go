@@ -9,14 +9,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tanx-libs/tanx-connector-go/types"
 )
 
 func TestClient_AllTickers(t *testing.T) {
 	testCases := []struct {
 		name         string
 		roundTripper http.RoundTripper
-		want         types.AllTickerResponse
+		want         AllTickerResponse
 		timeout      time.Duration
 		wantErr      bool
 	}{
@@ -30,7 +29,7 @@ func TestClient_AllTickers(t *testing.T) {
 				Delay: time.Second * 2,
 			},
 			timeout: time.Nanosecond,
-			want: types.AllTickerResponse{
+			want: AllTickerResponse{
 				Status: "success",
 			},
 			wantErr: true,

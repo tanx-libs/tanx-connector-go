@@ -1,134 +1,116 @@
 package wsclient
 
 import (
-	"context"
 	"encoding/json"
-	"log"
-	"net/url"
-
-	"github.com/tanx-libs/tanx-connector-go/types"
-	"nhooyr.io/websocket"
+	"fmt"
 )
 
-type WsClient struct {
-	baseURL     *url.URL
-	closeCh     chan struct{}
-	TradeStream chan types.TradeStreamResponse
-	// OrderBookStream   chan types.OrderBookStreamResponse
-	// CandlestickStream chan types.CandlestickStreamResponse
-	ws          *websocket.Conn
+// filled with default values by default
+type Wsclient struct {
+	baseURL    string
+	publicURL  string
+	privateURL string
 }
 
-/*
-This checks connection to the websocket server and return error if it fails
-*/
-func New(ctx context.Context) (*WsClient, error) {
-	url, err := url.Parse(types.WS_BASE_URL)
-	if err != nil {
-		return nil, err
+func New() *Wsclient {
+	return &Wsclient{
+		baseURL:    BASE_URL,
+		publicURL:  BASE_URL + PUBLIC_ENDPOINT,
+		privateURL: BASE_URL + PRIVATE_ENDPOINT,
 	}
-
-	c, _, err := websocket.Dial(ctx, url.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO
-	wsclient := &WsClient{
-		baseURL:     url,
-		closeCh:     make(chan struct{}),
-		TradeStream: make(chan types.TradeStreamResponse),
-		ws:          c,
-	}
-
-	go wsclient.listen(ctx)
-
-	return wsclient, nil
 }
 
-func (c *WsClient) BaseURL(baseURL string) (*WsClient, error) {
-	url, err := url.Parse(baseURL)
-	if err != nil {
-		return nil, err
-	}
-
-	c.baseURL = url
-	return c, nil
+func (c *Wsclient) BaseURL(baseURL string) *Wsclient {
+	c.baseURL = baseURL
+	return c
 }
 
-func (c *WsClient) Subscribe(ctx context.Context, streams []string) error {
-	req := types.SubUnsubRequest{
-		Event:   "subscribe",
-		Streams: streams,
-	}
-
-	err := c.checkSubUnsubStatus(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (c *Wsclient) PublicPath(publicPath string) *Wsclient {
+	c.publicURL = c.baseURL + publicPath
+	return c
 }
 
-func (c *WsClient) UnSubscribe(ctx context.Context, streams []string) error {
-	req := types.SubUnsubRequest{
-		Event:   "unsubscribe",
-		Streams: streams,
-	}
-
-	err := c.checkSubUnsubStatus(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (c *Wsclient) PrivatePath(privatePath string) *Wsclient {
+	c.privateURL = c.baseURL + privatePath
+	return c
 }
 
-func (c *WsClient) checkSubUnsubStatus(ctx context.Context, req types.SubUnsubRequest) error {
-	reqBytes, err := json.Marshal(req)
-	if err != nil {
-		return err
+// TODO: handle unsubscribe (look for different ways)
+func (c *Wsclient) Trade(symbol []string, tradeEventHandler TradeEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	topics := make([]string, len(symbol))
+	for i, s := range symbol {
+		topics[i] = fmt.Sprintf("%s.trades", s)
+	}
+	config := &Config{
+		endpoint: c.publicURL,
+		request: request{
+			Event:   SUBSCRIBE,
+			Streams: topics,
+		},
 	}
 
-	err = c.ws.Write(ctx, websocket.MessageText, reqBytes)
-	if err != nil {
-		return err
-	}
+	eventHandler := func(message []byte) {
+		var msg map[string]interface{}
+		err := json.Unmarshal(message, &msg)
+		if err != nil {
+			errHandler(err)
+			return
+		}
 
-	return nil
-}
-
-func (c *WsClient) listen(ctx context.Context) {
-	go func() {
-		for {
-			// logging success message
-			_, data, err := c.ws.Read(ctx)
+		switch {
+		case msg[SUB_UNSUB_SUCCESS] != nil || msg[SUB_UNSUB_ERROR] != nil:
+			var subUnsubEvent *SubUnsubEvent
+			err = json.Unmarshal(message, &subUnsubEvent)
 			if err != nil {
-				log.Println(err)
-				c.closeCh <- struct{}{}
+				errHandler(err)
+				return
 			}
+			subUnsubEventHandler(subUnsubEvent)
 
-			log.Println(string(data))
-		}
-	}()
-
-	for {
-		select {
-		// TODO
-		case <-c.closeCh:
-			log.Println("closing websocket connection")
-			c.ws.Close(websocket.StatusNormalClosure, "closing websocket connection")
-			return
-
-		// TODO
-		case <-ctx.Done():
-			log.Println("context done triggered")
-			c.ws.Close(websocket.StatusNormalClosure, "context done")
-			return
+		default:
+			var tradeEvent *TradeEvent
+			err = json.Unmarshal(message, &tradeEvent)
+			if err != nil {
+				errHandler(err)
+				return
+			}
+			tradeEventHandler(tradeEvent)
 		}
 	}
+
+	return serve(config, eventHandler, errHandler)
 }
 
-func (c *WsClient) Close() {
-	c.closeCh <- struct{}{}
-}
+
+// TODO: Rest of them will follow the same mechanic 
+
+// func (c *Wsclient) Kline(symbol string, interval KlinePeriod, klineEventHandler KlineEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, err error) {
+// 	topic := fmt.Sprintf("%s.kline-%s", strings.ToLower(symbol), interval)
+// 	config := &Config{
+// 		endpoint: c.publicURL,
+// 		request: request{
+// 			Event:   "subscribe",
+// 			Streams: []string{topic},
+// 		},
+// 	}
+// 	log.Printf("%+v", config)
+
+// 	// here data parsing is done
+// 	eventHandler := func(message []byte) {
+// 		var event *KlineEvent
+// 		var success *successResponse
+
+// 		err := json.Unmarshal(message, &event)
+// 		if err == nil {
+// 			klineEventHandler(event)
+// 		} else {
+// 			err = json.Unmarshal(message, &success)
+// 			if err != nil {
+// 				errHandler(err)
+// 			} else {
+// 				log.Printf("%+v", success)
+// 			}
+// 		}
+// 	}
+// 	return serve(config, eventHandler, errHandler)
+// }

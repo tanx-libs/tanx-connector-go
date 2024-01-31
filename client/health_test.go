@@ -10,15 +10,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tanx-libs/tanx-connector-go/types"
 )
 
 func TestClient_Health(t *testing.T) {
 	testCases := []struct {
 		name         string
 		roundTripper http.RoundTripper
-		timeout 	time.Duration
-		want         types.HealthResponse
+		timeout      time.Duration
+		want         HealthResponse
 		wantErr      bool
 	}{
 		{
@@ -33,7 +32,7 @@ func TestClient_Health(t *testing.T) {
                     }`)),
 				},
 			},
-			want: types.HealthResponse{
+			want: HealthResponse{
 				Status:  "success",
 				Message: "Working fine!",
 				Payload: "",
