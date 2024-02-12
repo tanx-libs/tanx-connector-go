@@ -1,8 +1,25 @@
 package wsclient
 
 import (
-	"encoding/json"
-	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+const (
+	BASE_URL          = "wss://api.tanx.fi"
+	PUBLIC_ENDPOINT   = "/public"
+	PRIVATE_ENDPOINT  = "/private"
+	SUB_UNSUB_SUCCESS = "success"
+	SUB_UNSUB_ERROR   = "error"
+)
+
+type SubUnsub string
+
+const (
+	SUBSCRIBE   SubUnsub = "subscribe"
+	UNSUBSCRIBE SubUnsub = "unsubscribe"
 )
 
 // filled with default values by default
@@ -35,54 +52,146 @@ func (c *Wsclient) PrivatePath(privatePath string) *Wsclient {
 	return c
 }
 
-// TODO: handle unsubscribe (look for different ways)
-func (c *Wsclient) Trade(symbol []string, tradeEventHandler TradeEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
-	topics := make([]string, len(symbol))
-	for i, s := range symbol {
-		topics[i] = fmt.Sprintf("%s.trades", s)
-	}
-	config := &Config{
-		endpoint: c.publicURL,
-		request: request{
-			Event:   SUBSCRIBE,
-			Streams: topics,
-		},
-	}
+var (
+	// WebsocketTimeout is an interval for sending ping/pong messages if WebsocketKeepalive is enabled
+	WebsocketTimeout = time.Second * 60
 
-	eventHandler := func(message []byte) {
-		var msg map[string]interface{}
-		err := json.Unmarshal(message, &msg)
-		if err != nil {
-			errHandler(err)
-			return
-		}
+	// WebsocketKeepalive enables sending ping/pong messages to check the connection stability
+	WebsocketKeepalive = false
+)
 
-		switch {
-		case msg[SUB_UNSUB_SUCCESS] != nil || msg[SUB_UNSUB_ERROR] != nil:
-			var subUnsubEvent *SubUnsubEvent
-			err = json.Unmarshal(message, &subUnsubEvent)
-			if err != nil {
-				errHandler(err)
-				return
-			}
-			subUnsubEventHandler(subUnsubEvent)
-
-		default:
-			var tradeEvent *TradeEvent
-			err = json.Unmarshal(message, &tradeEvent)
-			if err != nil {
-				errHandler(err)
-				return
-			}
-			tradeEventHandler(tradeEvent)
-		}
-	}
-
-	return serve(config, eventHandler, errHandler)
+// Config webservice configuration
+type SubUnsubRequest struct {
+	Event   SubUnsub   `json:"event"`
+	Streams []string `json:"streams"`
 }
 
+// Can add more configurations here in the future
+type Config struct {
+	endpoint        string
+	subUnsubRequest SubUnsubRequest
+}
 
-// TODO: Rest of them will follow the same mechanic 
+// EventHandler handle raw websocket message
+type EventHandler func(message []byte)
+
+// ErrHandler handles errors
+type ErrHandler func(err error)
+
+// TODO
+// Subscribe Unsubscribe handlers
+type Success struct {
+	Message string   `json:"message"`
+	Streams []string `json:"streams"`
+}
+
+type SubUnsubEvent struct {
+	Success Success `json:"success"`
+}
+
+type SubUnsubEventHandler func(event *SubUnsubEvent)
+
+func serve(cfg *Config, eventHandler EventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
+	dialer := websocket.Dialer{
+		Proxy:             http.ProxyFromEnvironment,
+		HandshakeTimeout:  45 * time.Second,
+		EnableCompression: false,
+	}
+
+	c, _, err := dialer.Dial(cfg.endpoint, nil)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	err = c.WriteJSON(cfg.subUnsubRequest)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	c.SetReadLimit(655350)
+	doneCh = make(chan struct{})
+	stopCh = make(chan struct{})
+	subUnsubCh = make(chan SubUnsubRequest, 1)
+	go func() {
+		// This function will exit either on error from
+		// websocket.Conn.ReadMessage or when the stopCh channel is
+		// closed by the client.
+		defer close(doneCh)
+		if WebsocketKeepalive {
+			keepAlive(c, WebsocketTimeout)
+		}
+		// Wait for the stopCh channel to be closed.  We do that in a
+		// separate goroutine because ReadMessage is a blocking
+		// operation.
+		silent := false
+		go func() {
+			select {
+			case <-stopCh:
+				silent = true
+			case <-doneCh:
+			}
+			c.Close()
+		}()
+
+		for {
+			select {
+			case subUnsubRequest := <-subUnsubCh:
+				err := c.WriteJSON(subUnsubRequest)
+				if err != nil && !silent {
+					errHandler(&ErrWsWriteJSON{
+						Msg: "Error when sending sub/unsub request to the server",
+						Err: err,
+					})
+				}
+			default:
+				_, message, err := c.ReadMessage()
+				if err != nil {
+					if !silent {
+						errHandler(&ErrWsReadMessage{
+							Err: err,
+						})
+					}
+					return
+				}
+				eventHandler(message)
+			}
+		}
+	}()
+
+	return
+}
+
+/*
+- This basically registers a handler for pong messages.
+- Then after every "timeout" seconds, it will check if ping pong happend or not.
+- If yes then it continues the behaviour thus keeping the connection alive.
+- If no then the connection breaks.
+*/
+func keepAlive(c *websocket.Conn, timeout time.Duration) {
+	ticker := time.NewTicker(timeout)
+
+	lastResponse := time.Now()
+	c.SetPongHandler(func(msg string) error {
+		lastResponse = time.Now()
+		return nil
+	})
+
+	go func() {
+		defer ticker.Stop()
+		for {
+			deadline := time.Now().Add(10 * time.Second)
+			err := c.WriteControl(websocket.PingMessage, []byte{}, deadline)
+			if err != nil {
+				return
+			}
+			<-ticker.C
+			if time.Since(lastResponse) > timeout {
+				c.Close()
+				return
+			}
+		}
+	}()
+}
 
 // func (c *Wsclient) Kline(symbol string, interval KlinePeriod, klineEventHandler KlineEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, err error) {
 // 	topic := fmt.Sprintf("%s.kline-%s", strings.ToLower(symbol), interval)
