@@ -5,9 +5,12 @@ import (
 	"net/url"
 )
 
+// Specify mainet or testnet
+type Base string
+
 const (
-	BASE_URL    = "https://api.tanx.fi"
-	TESTNET_URL = "https://api-testnet.tanx.fi"
+	MAINET  Base = "https://api.tanx.fi"
+	TESTNET Base = "https://api-testnet.tanx.fi"
 
 	HEALTH_PATH      = "sapi/v1/health/"
 	TICKER_PATH      = "sapi/v1/market/tickers/"
@@ -56,8 +59,8 @@ type Client struct {
 	orderCreateURL *url.URL
 }
 
-func New() (*Client, error) {
-	baseurl, err := url.Parse(BASE_URL)
+func New(base Base) (*Client, error) {
+	baseurl, err := url.Parse(string(base))
 	if err != nil {
 		return nil, err
 	}
@@ -104,53 +107,6 @@ func New() (*Client, error) {
 	}, nil
 }
 
-func NewTestnet() (*Client, error) {
-	baseurl, err := url.Parse(BASE_URL)
-	if err != nil {
-		return nil, err
-	}
-
-	healthurl := baseurl.JoinPath(HEALTH_PATH)
-	tickerurl := baseurl.JoinPath(TICKER_PATH)
-	candleStickurl := baseurl.JoinPath(CANDLESTICK_PATH)
-	orderBookurl := baseurl.JoinPath(ORDERBOOK_PATH)
-	tradesurl := baseurl.JoinPath(TRADES_PATH)
-
-	nonceurl := baseurl.JoinPath(NONCE_PATH)
-	loginurl := baseurl.JoinPath(LOGIN_PATH)
-	refreshTokenurl := baseurl.JoinPath(REFRESH_TOKEN_PATH)
-
-	profileurl := baseurl.JoinPath(PROFILE_PATH)
-	balanceurl := baseurl.JoinPath(BALANCE_PATH)
-	pnlurl := baseurl.JoinPath(PNL_PATH)
-
-	ordernonceurl := baseurl.JoinPath(ORDER_NONCE_PATH)
-	ordercreateurl := baseurl.JoinPath(ORDER_CREATE_PATH)
-
-	return &Client{
-		httpClient:   http.DefaultClient,
-		jwtToken:     "",
-		refreshToken: "",
-
-		baseURL:        baseurl,
-		healthURL:      healthurl,
-		tickerURL:      tickerurl,
-		candleStickURL: candleStickurl,
-		orderBookURL:   orderBookurl,
-		tradesURL:      tradesurl,
-
-		nonceURL:        nonceurl,
-		loginURL:        loginurl,
-		refreshTokenURL: refreshTokenurl,
-
-		profileURL: profileurl,
-		balanceURL: balanceurl,
-		pnlURL:     pnlurl,
-
-		orderNonceURL:  ordernonceurl,
-		orderCreateURL: ordercreateurl,
-	}, nil
-}
 
 func (c *Client) SetJWTToken(jwtToken string) {
 	c.jwtToken = jwtToken

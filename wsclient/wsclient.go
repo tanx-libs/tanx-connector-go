@@ -7,22 +7,20 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type SubUnsub string
+
 const (
 	BASE_URL          = "wss://api.tanx.fi"
 	PUBLIC_ENDPOINT   = "/public"
 	PRIVATE_ENDPOINT  = "/private"
 	SUB_UNSUB_SUCCESS = "success"
 	SUB_UNSUB_ERROR   = "error"
-)
 
-type SubUnsub string
-
-const (
 	SUBSCRIBE   SubUnsub = "subscribe"
 	UNSUBSCRIBE SubUnsub = "unsubscribe"
 )
 
-// filled with default values by default
+
 type Wsclient struct {
 	baseURL    string
 	publicURL  string
@@ -60,26 +58,20 @@ var (
 	WebsocketKeepalive = false
 )
 
-// Config webservice configuration
 type SubUnsubRequest struct {
-	Event   SubUnsub   `json:"event"`
+	Event   SubUnsub `json:"event"`
 	Streams []string `json:"streams"`
 }
 
-// Can add more configurations here in the future
 type Config struct {
 	endpoint        string
 	subUnsubRequest SubUnsubRequest
 }
 
-// EventHandler handle raw websocket message
 type EventHandler func(message []byte)
 
-// ErrHandler handles errors
 type ErrHandler func(err error)
 
-// TODO
-// Subscribe Unsubscribe handlers
 type Success struct {
 	Message string   `json:"message"`
 	Streams []string `json:"streams"`
@@ -192,34 +184,3 @@ func keepAlive(c *websocket.Conn, timeout time.Duration) {
 		}
 	}()
 }
-
-// func (c *Wsclient) Kline(symbol string, interval KlinePeriod, klineEventHandler KlineEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, err error) {
-// 	topic := fmt.Sprintf("%s.kline-%s", strings.ToLower(symbol), interval)
-// 	config := &Config{
-// 		endpoint: c.publicURL,
-// 		request: request{
-// 			Event:   "subscribe",
-// 			Streams: []string{topic},
-// 		},
-// 	}
-// 	log.Printf("%+v", config)
-
-// 	// here data parsing is done
-// 	eventHandler := func(message []byte) {
-// 		var event *KlineEvent
-// 		var success *successResponse
-
-// 		err := json.Unmarshal(message, &event)
-// 		if err == nil {
-// 			klineEventHandler(event)
-// 		} else {
-// 			err = json.Unmarshal(message, &success)
-// 			if err != nil {
-// 				errHandler(err)
-// 			} else {
-// 				log.Printf("%+v", success)
-// 			}
-// 		}
-// 	}
-// 	return serve(config, eventHandler, errHandler)
-// }

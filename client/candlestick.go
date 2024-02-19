@@ -4,14 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-)
-
-// candleStick
-const (
-	CANDLESTICK_DEFAULT_LIMIT  = 30
-	CANDLESTICK_DEFAULT_PERIOD = PERIOD_1MIN
 )
 
 type Period int
@@ -44,7 +37,10 @@ type CandleStickResponse struct {
 	Payload [][]float64 `json:"payload"`
 }
 
-// candle stick
+/*
+Retrieve K-line/Candlestick data for the specified by making use of this endpoint.
+You can define the limit, period, start time and end time for the same.
+*/
 func (c *Client) CandleStick(ctx context.Context, market string, options CandleStickOptions) (CandleStickResponse, error) {
 	if len(market) == 0 {
 		return CandleStickResponse{}, ErrMarketNotProvided
@@ -56,11 +52,11 @@ func (c *Client) CandleStick(ctx context.Context, market string, options CandleS
 	params.Set("market", market)
 	if options.Limit != 0 {
 		params.Set("limit", fmt.Sprintf("%d", options.Limit))
-	} 
+	}
 
 	if options.Period != 0 {
 		params.Set("period", fmt.Sprintf("%d", options.Period))
-	} 
+	}
 
 	if options.StartTime != 0 {
 		params.Set("start_time", fmt.Sprintf("%d", options.StartTime))
@@ -72,7 +68,6 @@ func (c *Client) CandleStick(ctx context.Context, market string, options CandleS
 
 	candleStickURL.RawQuery = params.Encode()
 
-	log.Println(candleStickURL.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, candleStickURL.String(), nil)
 	if err != nil {
 		return CandleStickResponse{}, err

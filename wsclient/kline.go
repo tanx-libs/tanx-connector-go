@@ -11,20 +11,6 @@ type KlineEventHandler func(event *KlineEvent)
 
 type KlinePeriod string
 
-func SubUnsubKlineTopics(subUnsub SubUnsub, symbol map[string]KlinePeriod) SubUnsubRequest {
-	topics := make([]string, len(symbol))
-	i := 0
-	for s, p := range symbol {
-		topics[i] = fmt.Sprintf("%s.kline-%s", s, p)
-		i++
-	}
-
-	return SubUnsubRequest{
-		Event:   subUnsub,
-		Streams: topics,
-	}
-}
-
 const (
 	PERIOD_1M  KlinePeriod = "1m"
 	PERIOD_5M  KlinePeriod = "5m"
@@ -40,6 +26,22 @@ const (
 	PERIOD_1W  KlinePeriod = "1w"
 )
 
+// SubUnsubKlineTopics returns a SubUnsubRequest to subscribe or unsubscribe to Kline data
+func SubUnsubKlineTopics(subUnsub SubUnsub, symbol map[string]KlinePeriod) SubUnsubRequest {
+	topics := make([]string, len(symbol))
+	i := 0
+	for s, p := range symbol {
+		topics[i] = fmt.Sprintf("%s.kline-%s", s, p)
+		i++
+	}
+
+	return SubUnsubRequest{
+		Event:   subUnsub,
+		Streams: topics,
+	}
+}
+
+// Kline subscribes to Kline data
 func (c *Wsclient) Kline(symbol map[string]KlinePeriod, klineEventHandler KlineEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
 	config := &Config{
 		endpoint:        c.publicURL,

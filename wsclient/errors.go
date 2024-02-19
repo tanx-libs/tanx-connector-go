@@ -37,6 +37,7 @@ func (e *ErrSubUnsub) Error() string {
 	return fmt.Sprintf("Debug: %s\nError: %s\n", e.Msg, e.Err)
 }
 
+// websocket write message error
 type ErrWsWriteJSON struct {
 	Msg string
 	Err error

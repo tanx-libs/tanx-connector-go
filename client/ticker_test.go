@@ -38,7 +38,7 @@ func TestClient_AllTickers(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			client, err := New()
+			client, err := New(TESTNET)
 			assert.NoError(t, err)
 
 			client.httpClient.Transport = tc.roundTripper

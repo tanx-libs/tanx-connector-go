@@ -27,15 +27,10 @@ func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 func TestClient(t *testing.T) {
 	t.Run("basic client initialization", func(t *testing.T) {
-		_, err := New()
+		_, err := New(MAINET)
 		assert.NoError(t, err)
 
-		// assert.Equal(t, JSON_BASE_URL, client.baseURL.String())
-		// assert.Equal(t, JSON_BASE_URL+HEALTH_PATH, client.healthURL.String())
-		// assert.Equal(t, JSON_BASE_URL+TICKER_PATH, client.tickerURL.String())
-
-		// client = client.HealthPath("/health").TickerPath("/ticker")
-		// assert.Equal(t, JSON_BASE_URL+"health", client.healthURL.String())
-		// assert.Equal(t, JSON_BASE_URL+"ticker", client.tickerURL.String())
+		_, err = New(TESTNET)
+		assert.NoError(t, err)
 	})
 }

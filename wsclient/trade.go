@@ -21,6 +21,7 @@ type TradeEvent map[string]Trades
 
 type TradeEventHandler func(event *TradeEvent)
 
+// SubUnsubTradeTopics returns a SubUnsubRequest to subscribe or unsubscribe to Trade data
 func SubUnsubTradeTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest {
 	topics := make([]string, len(symbol))
 	for i, s := range symbol {
@@ -33,11 +34,7 @@ func SubUnsubTradeTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest {
 	}
 }
 
-// TODO
-/*
-* 1. Seperate error from subsciption
-* 2. Make error types
- */
+// Trade subscribes to Trade data
 func (c *Wsclient) Trade(symbol []string, tradeEventHandler TradeEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
 	config := &Config{
 		endpoint:        c.publicURL,

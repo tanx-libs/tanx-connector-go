@@ -4,14 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-)
-
-// orderBook
-const (
-	ORDERBOOK_DEFAULT_ASK_LIMIT = 20
-	ORDERBOOK_DEFAULT_BID_LIMIT = 20
 )
 
 type OrderBookOptions struct {
@@ -68,6 +61,9 @@ type OrderBookResponse struct {
 	Payload OrderBookPayload `json:"payload"`
 }
 
+/*
+Retrieve the latest asks and bids created within the tanX orderbook in a specific market using this endpoint
+*/
 func (c *Client) OrderBook(ctx context.Context, market string, options OrderBookOptions) (OrderBookResponse, error) {
 	if len(market) == 0 {
 		return OrderBookResponse{}, ErrMarketNotProvided
@@ -80,14 +76,13 @@ func (c *Client) OrderBook(ctx context.Context, market string, options OrderBook
 
 	if options.AskLimit != 0 {
 		params.Set("ask_limit", fmt.Sprintf("%d", options.AskLimit))
-	} 
+	}
 
 	if options.BidLimit != 0 {
 		params.Set("bid_limit", fmt.Sprintf("%d", options.BidLimit))
-	} 
+	}
 
 	orderBookURL.RawQuery = params.Encode()
-	log.Println(orderBookURL.String())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, orderBookURL.String(), nil)
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"net/http"
 )
 
-// 24 hour ticker
 type Ticker struct {
 	Low                string `json:"low"`
 	High               string `json:"high"`

@@ -4,14 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-)
-
-// trades
-const (
-	TRADES_DEFAULT_LIMIT    = 100
-	TRADES_DEFAULT_ORDER_BY = DESC
 )
 
 type OrderBy string
@@ -43,7 +36,9 @@ type TradesResponse struct {
 	Payload []TradesPayload `json:"payload"`
 }
 
-// trades
+/*
+Retrieve the list of recent market trades placed successfully for a specific market using this endpoint
+*/
 func (c *Client) Trades(ctx context.Context, market string, options TradesOptions) (TradesResponse, error) {
 	if len(market) == 0 {
 		return TradesResponse{}, ErrMarketNotProvided
@@ -64,10 +59,9 @@ func (c *Client) Trades(ctx context.Context, market string, options TradesOption
 
 	if options.OrderBy != "" {
 		params.Set("from", string(options.OrderBy))
-	} 
+	}
 
 	tradesURL.RawQuery = params.Encode()
-	log.Println(tradesURL.String())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, tradesURL.String(), nil)
 	if err != nil {

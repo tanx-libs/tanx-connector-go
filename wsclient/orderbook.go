@@ -15,6 +15,7 @@ type OrderbookEvent map[string]OrderbookData
 
 type OrderbookEventHandler func(event *OrderbookEvent)
 
+// SubUnsubOrderbookTopics returns a SubUnsubRequest to subscribe or unsubscribe to Orderbook data
 func SubUnsubOrderbookTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest {
 	topics := make([]string, len(symbol))
 	for i, s := range symbol {
@@ -27,6 +28,7 @@ func SubUnsubOrderbookTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest
 	}
 }
 
+// Orderbook subscribes to Orderbook data
 func (c *Wsclient) Orderbook(symbol []string, orderbookEventHandler OrderbookEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
 	config := &Config{
 		endpoint:        c.publicURL,
