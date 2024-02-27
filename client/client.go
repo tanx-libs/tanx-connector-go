@@ -25,8 +25,10 @@ const (
 	BALANCE_PATH       = "sapi/v1/user/balance/"
 	PNL_PATH           = "sapi/v1/user/pnl/"
 
+	ORDER_BASE_PATH   = "sapi/v1/orders/"
 	ORDER_NONCE_PATH  = "sapi/v1/orders/nonce/"
 	ORDER_CREATE_PATH = "sapi/v1/orders/create/"
+	ORDER_CANCEL_PATH = "sapi/v1/orders/cancel/"
 )
 
 /*
@@ -55,6 +57,7 @@ type Client struct {
 	balanceURL *url.URL
 	pnlURL     *url.URL
 
+	orderURL       *url.URL
 	orderNonceURL  *url.URL
 	orderCreateURL *url.URL
 }
@@ -79,6 +82,7 @@ func New(base Base) (*Client, error) {
 	balanceurl := baseurl.JoinPath(BALANCE_PATH)
 	pnlurl := baseurl.JoinPath(PNL_PATH)
 
+	orderURL := baseurl.JoinPath(ORDER_BASE_PATH)
 	ordernonceurl := baseurl.JoinPath(ORDER_NONCE_PATH)
 	ordercreateurl := baseurl.JoinPath(ORDER_CREATE_PATH)
 
@@ -102,11 +106,11 @@ func New(base Base) (*Client, error) {
 		balanceURL: balanceurl,
 		pnlURL:     pnlurl,
 
+		orderURL:       orderURL,
 		orderNonceURL:  ordernonceurl,
 		orderCreateURL: ordercreateurl,
 	}, nil
 }
-
 
 func (c *Client) SetJWTToken(jwtToken string) {
 	c.jwtToken = jwtToken
