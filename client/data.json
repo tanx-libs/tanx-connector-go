@@ -1,0 +1,7 @@
+{Status:success Message:Orders Retrieved Successfully Payload: [
+        {ID: 10289001 UUID: 7c6f0e1d-75f7-460a-b7e6-fbeb813fedda Side:sell OrdType:limit Price: 52000.0 AvgPrice: 0.0 State:wait Market:btcusdc CreatedAt: 2024-02-28T07: 58: 54+01: 00 UpdatedAt: 2024-02-28T07: 58: 54+01: 00 OriginVolume: 0.0001 RemainingVolume: 0.0001 ExecutedVolume: 0.0 MakerFee: 0.0004 TakerFee: 0.0004 TradesCount: 0
+        } {ID: 10215347 UUID: 6200e8c5-0d04-4731-8442-5d74cc1c1aaf Side:sell OrdType:limit Price: 52000.0 AvgPrice: 0.0 State:wait Market:btcusdc CreatedAt: 2024-02-27T10: 34: 13+01: 00 UpdatedAt: 2024-02-27T10: 34: 13+01: 00 OriginVolume: 0.0001 RemainingVolume: 0.0001 ExecutedVolume: 0.0 MakerFee: 0.0004 TakerFee: 0.0004 TradesCount: 0
+        } {ID: 10214822 UUID:373596eb-433b-4f7f-ac19-9e0b7d318778 Side:sell OrdType:market Price: AvgPrice: 51137.27 State:done Market:btcusdt CreatedAt: 2024-02-27T10: 26: 16+01: 00 UpdatedAt: 2024-02-27T10: 26: 16+01: 00 OriginVolume: 0.0001 RemainingVolume: 0.0 ExecutedVolume: 0.0001 MakerFee: 0.0004 TakerFee: 0.0004 TradesCount: 1
+        }
+    ]
+}

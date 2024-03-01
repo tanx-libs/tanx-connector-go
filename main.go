@@ -8,27 +8,34 @@ import (
 	"github.com/tanx-libs/tanx-connector-go/client"
 )
 
-func main() {
-	log.Println(fmt.Sprintf("0x%x", 10))
+type Entry struct {
+	MsgHash string `json:"msg_hash"`
+	R       string `json:"r"`
+	S       string `json:"s"`
+}
 
-	c, err := client.New(client.MAINET)
+func main() {
+	c, err := client.New(client.TESTNET)
 	if err != nil {
 		panic(err)
 	}
 
 	// first login
 	ethAddr := "0xF58001619C165cDd20B5F7A0EDa072Fd13943002"
-	ethPrivateKey := ""
+	ethPrivateKey := "e65c38b42af2e20540fde19d10bec7fb752ab58852e466151747abc08ae2494a"
 	_, _, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
 	if err != nil {
 		panic(err)
 	}
 
-	// fmt.Println(nonce, jwt)
-
 	// add correct valueshere to test the order
-	starkPrivateKey := ""
-	order, err := c.OrderCreate(context.TODO(), starkPrivateKey, "ethusdt", "limit", 100, "buy", 100)
+	starkPrivateKey := "588ad6325783739b3806e27feebeb1c270d4c6875c29517ff1d689e777b13a6"
+	order, err := c.OrderCreate(context.TODO(), starkPrivateKey, client.OrderOptions{
+		Market:  "btcusdc",
+		OrdType: "market",
+		Side:    "buy",
+		Volume:  0.0001,
+	})
 	if err != nil {
 		log.Println(err)
 	}
