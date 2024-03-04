@@ -157,7 +157,7 @@ type RefreshTokenRequest struct {
 }
 
 
-func (c *Client) RefreshToken(ctx context.Context) (JWTResponse, error) {
+func (c *Client) Relogin(ctx context.Context) (JWTResponse, error) {
 	refreshRequest := RefreshTokenRequest{
 		Refresh: c.refreshToken,
 	}

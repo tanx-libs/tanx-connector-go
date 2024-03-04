@@ -8,46 +8,45 @@ import (
 )
 
 type SubUnsub string
+type Base string
 
 const (
-	BASE_URL          = "wss://api.tanx.fi"
-	PUBLIC_ENDPOINT   = "/public"
-	PRIVATE_ENDPOINT  = "/private"
+	MAINET  Base = "wss://api.tanx.fi"
+	TESTNET Base = "wss://api-testnet.tanx.fi"
+
+	PUBLIC_PATH   = "/public"
+	PRIVATE_PATH  = "/private"
+	
 	SUB_UNSUB_SUCCESS = "success"
 	SUB_UNSUB_ERROR   = "error"
-
 	SUBSCRIBE   SubUnsub = "subscribe"
 	UNSUBSCRIBE SubUnsub = "unsubscribe"
 )
-
 
 type Wsclient struct {
 	baseURL    string
 	publicURL  string
 	privateURL string
+
+	accessToken     string
+	refreshToken string
 }
 
-func New() *Wsclient {
+// TODO error handling for wsclient urls
+func New(baseURL Base) *Wsclient {
 	return &Wsclient{
-		baseURL:    BASE_URL,
-		publicURL:  BASE_URL + PUBLIC_ENDPOINT,
-		privateURL: BASE_URL + PRIVATE_ENDPOINT,
+		baseURL:    string(baseURL),
+		publicURL:  string(baseURL) + PUBLIC_PATH,
+		privateURL: string(baseURL) + PRIVATE_PATH,
+
+		accessToken: "",
+		refreshToken: "",
 	}
 }
 
-func (c *Wsclient) BaseURL(baseURL string) *Wsclient {
-	c.baseURL = baseURL
-	return c
-}
-
-func (c *Wsclient) PublicPath(publicPath string) *Wsclient {
-	c.publicURL = c.baseURL + publicPath
-	return c
-}
-
-func (c *Wsclient) PrivatePath(privatePath string) *Wsclient {
-	c.privateURL = c.baseURL + privatePath
-	return c
+func (c *Wsclient)SetJwt(jwtToken string, refreshToken string) {
+	c.accessToken = jwtToken
+	c.refreshToken = refreshToken
 }
 
 var (
@@ -97,7 +96,10 @@ func serve(cfg *Config, eventHandler EventHandler, errHandler ErrHandler) (doneC
 
 	err = c.WriteJSON(cfg.subUnsubRequest)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, &ErrSubUnsub{
+			Msg: "Error when sending sub/unsub request to the server",
+			Err: err,
+		}
 	}
 
 	c.SetReadLimit(655350)
@@ -130,7 +132,7 @@ func serve(cfg *Config, eventHandler EventHandler, errHandler ErrHandler) (doneC
 			case subUnsubRequest := <-subUnsubCh:
 				err := c.WriteJSON(subUnsubRequest)
 				if err != nil && !silent {
-					errHandler(&ErrWsWriteJSON{
+					errHandler(&ErrSubUnsub{
 						Msg: "Error when sending sub/unsub request to the server",
 						Err: err,
 					})
@@ -140,6 +142,7 @@ func serve(cfg *Config, eventHandler EventHandler, errHandler ErrHandler) (doneC
 				if err != nil {
 					if !silent {
 						errHandler(&ErrWsReadMessage{
+							Msg: "Error when reading message from the server",
 							Err: err,
 						})
 					}
