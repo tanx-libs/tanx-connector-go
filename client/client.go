@@ -6,29 +6,36 @@ import (
 )
 
 // Specify mainet or testnet
-type Base string
-
 const (
-	MAINET  Base = "https://api.tanx.fi"
-	TESTNET Base = "https://api-testnet.tanx.fi"
+	MAINNET  = "https://api.tanx.fi"
+	TESTNET = "https://api-testnet.tanx.fi"
 
-	HEALTH_PATH      = "sapi/v1/health/"
-	TICKER_PATH      = "sapi/v1/market/tickers/"
-	CANDLESTICK_PATH = "sapi/v1/market/kline/"
-	ORDERBOOK_PATH   = "sapi/v1/market/orderbook/"
-	TRADES_PATH      = "sapi/v1/market/trades/"
+	HEALTH_ENDPOINT      = "sapi/v1/health/"
+	TICKER_ENDPOINT      = "sapi/v1/market/tickers/"
+	CANDLESTICK_ENDPOINT = "sapi/v1/market/kline/"
+	ORDERBOOK_ENDPOINT   = "sapi/v1/market/orderbook/"
+	TRADES_ENDPOINT      = "sapi/v1/market/trades/"
 
-	NONCE_PATH         = "sapi/v2/auth/nonce/"
-	LOGIN_PATH         = "sapi/v2/auth/login/"
-	REFRESH_TOKEN_PATH = "sapi/v2/auth/token/refresh/"
-	PROFILE_PATH       = "sapi/v1/user/profile/"
-	BALANCE_PATH       = "sapi/v1/user/balance/"
-	PNL_PATH           = "sapi/v1/user/pnl/"
+	NONCE_ENDPOINT         = "sapi/v2/auth/nonce/"
+	LOGIN_ENDPOINT         = "sapi/v2/auth/login/"
+	REFRESH_TOKEN_ENDPOINT = "sapi/v2/auth/token/refresh/"
+	PROFILE_ENDPOINT       = "sapi/v1/user/profile/"
+	BALANCE_ENDPOINT       = "sapi/v1/user/balance/"
+	PNL_ENDPOINT           = "sapi/v1/user/pnl/"
 
-	ORDER_BASE_PATH   = "sapi/v1/orders/"
-	ORDER_NONCE_PATH  = "sapi/v1/orders/nonce/"
-	ORDER_CREATE_PATH = "sapi/v1/orders/create/"
-	ORDER_CANCEL_PATH = "sapi/v1/orders/cancel/"
+	ORDER_BASE_ENDPOINT   = "sapi/v1/orders/"
+	ORDER_NONCE_ENDPOINT  = "sapi/v1/orders/nonce/"
+	ORDER_CREATE_ENDPOINT = "sapi/v1/orders/create/"
+	ORDER_CANCEL_ENDPOINT = "sapi/v1/orders/cancel/"
+
+	COIN_ENDPOINT           = "main/stat/v2/coins/"
+	VAULTID_ENDPOINT        = "main/user/create_vault/"
+	NETWORK_CONFIG_ENDPOINT = "main/stat/v2/app-and-markets/"
+	CRYPTO_DEPOSIT_START_ENDPOINT = "sapi/v1/payment/stark/start/"
+
+
+	MAINET_STARK_CONTRACT   = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
+	TESTNET_STARK_CONTRACT  = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
 )
 
 /*
@@ -60,31 +67,43 @@ type Client struct {
 	orderURL       *url.URL
 	orderNonceURL  *url.URL
 	orderCreateURL *url.URL
+	orderCancelURL *url.URL
+
+	coinURL          *url.URL
+	vaultIDURL       *url.URL
+	networkConfigURL *url.URL
+	cryptoDepositStartURL *url.URL
 }
 
-func New(base Base) (*Client, error) {
+func New(base string) (*Client, error) {
 	baseurl, err := url.Parse(string(base))
 	if err != nil {
 		return nil, err
 	}
 
-	healthurl := baseurl.JoinPath(HEALTH_PATH)
-	tickerurl := baseurl.JoinPath(TICKER_PATH)
-	candleStickurl := baseurl.JoinPath(CANDLESTICK_PATH)
-	orderBookurl := baseurl.JoinPath(ORDERBOOK_PATH)
-	tradesurl := baseurl.JoinPath(TRADES_PATH)
+	healthurl := baseurl.JoinPath(HEALTH_ENDPOINT)
+	tickerurl := baseurl.JoinPath(TICKER_ENDPOINT)
+	candleStickurl := baseurl.JoinPath(CANDLESTICK_ENDPOINT)
+	orderBookurl := baseurl.JoinPath(ORDERBOOK_ENDPOINT)
+	tradesurl := baseurl.JoinPath(TRADES_ENDPOINT)
 
-	nonceurl := baseurl.JoinPath(NONCE_PATH)
-	loginurl := baseurl.JoinPath(LOGIN_PATH)
-	refreshTokenurl := baseurl.JoinPath(REFRESH_TOKEN_PATH)
+	nonceurl := baseurl.JoinPath(NONCE_ENDPOINT)
+	loginurl := baseurl.JoinPath(LOGIN_ENDPOINT)
+	refreshTokenurl := baseurl.JoinPath(REFRESH_TOKEN_ENDPOINT)
 
-	profileurl := baseurl.JoinPath(PROFILE_PATH)
-	balanceurl := baseurl.JoinPath(BALANCE_PATH)
-	pnlurl := baseurl.JoinPath(PNL_PATH)
+	profileurl := baseurl.JoinPath(PROFILE_ENDPOINT)
+	balanceurl := baseurl.JoinPath(BALANCE_ENDPOINT)
+	pnlurl := baseurl.JoinPath(PNL_ENDPOINT)
 
-	orderURL := baseurl.JoinPath(ORDER_BASE_PATH)
-	ordernonceurl := baseurl.JoinPath(ORDER_NONCE_PATH)
-	ordercreateurl := baseurl.JoinPath(ORDER_CREATE_PATH)
+	orderURL := baseurl.JoinPath(ORDER_BASE_ENDPOINT)
+	ordernonceurl := baseurl.JoinPath(ORDER_NONCE_ENDPOINT)
+	ordercreateurl := baseurl.JoinPath(ORDER_CREATE_ENDPOINT)
+	ordercancelurl := baseurl.JoinPath(ORDER_CANCEL_ENDPOINT)
+
+	coinurl := baseurl.JoinPath(COIN_ENDPOINT)
+	vaultidurl := baseurl.JoinPath(VAULTID_ENDPOINT)
+	networkConfigurl := baseurl.JoinPath(NETWORK_CONFIG_ENDPOINT)
+	cryptoDepositStarturl := baseurl.JoinPath(CRYPTO_DEPOSIT_START_ENDPOINT)
 
 	return &Client{
 		httpClient:   http.DefaultClient,
@@ -109,13 +128,21 @@ func New(base Base) (*Client, error) {
 		orderURL:       orderURL,
 		orderNonceURL:  ordernonceurl,
 		orderCreateURL: ordercreateurl,
+		orderCancelURL: ordercancelurl,
+
+		coinURL:          coinurl,
+		vaultIDURL:       vaultidurl,
+		networkConfigURL: networkConfigurl,
+		cryptoDepositStartURL: cryptoDepositStarturl,
 	}, nil
 }
 
-func (c *Client) SetJWTToken(jwtToken string) {
-	c.jwtToken = jwtToken
-}
+// check auth
+func (c *Client) CheckAuth() error {
+	if c.jwtToken == "" || c.refreshToken == "" {
+		// throw error
+		return ErrNotLoggedIn
+	}
 
-func (c *Client) SetRefreshToken(refreshToken string) {
-	c.refreshToken = refreshToken
+	return nil
 }
