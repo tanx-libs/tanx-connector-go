@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"github.com/tanx-libs/tanx-connector-go/client"
 )
@@ -20,19 +20,37 @@ func main() {
 	}
 	ethAddr := "0xf318C11ff6E60115FB3e107bEa2637c060BEbc8C"
 	ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
-	starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
+	// starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
 
-	rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
+	// rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
 	_, _, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
 	if err != nil {
 		panic(err)
 	}
 
-	hash, err := c.DepositFromEthereumNetworkWithStarkKey(context.TODO(), rpcURL, ethAddr, client.TESTNET, 0.001, "ethereum", starkPublicKey)
+	// fmt.Printf("%+v", jwt)
+	organization_key := "+b^GSDqS#X79rE@_cNG!gk43HHz3V!-hhu+KFu*%b-ym6X#V^L?_jSCVtAy-yCec"
+
+	starkPrivateKey := "0x7302fa58776da9f8fcf3631f4cb495a4dd0cdfab785e8b72a8a637d4bb14784"
+	it, err := c.InternalTransferCreate(context.TODO(), starkPrivateKey, client.InternalTransferInitiateRequest{
+		OrganizationKey:    organization_key,
+		ApiKey:             "BRINE_SALT",
+		ClientReferenceId:  "12345",
+		Currency:           "ethereum",
+		Amount:             0.001,
+		DestinationAddress: ethAddr,
+	})
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
-	fmt.Printf("%+v", hash)
+
+	log.Println(it)
+
+	// hash, err := c.DepositFromEthereumNetworkWithStarkKey(context.TODO(), rpcURL, ethAddr, client.TESTNET, 0.001, "ethereum", starkPublicKey)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("%+v", hash)
 
 	// // TODO chal nahi raha yeh patani kyu ?
 	// jc, err := client.New(client.TESTNET)
