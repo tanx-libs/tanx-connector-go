@@ -1,7 +1,6 @@
 package client
 
 import (
-	"math"
 	"math/big"
 	"reflect"
 	"regexp"
@@ -43,7 +42,7 @@ func IsZeroAddress(iaddress interface{}) bool {
 }
 
 // ToDecimal wei to decimals
-func ToDecimal(ivalue interface{}, decimals int) decimal.Decimal {
+func ToDecimal(ivalue interface{}, decimals int) *big.Float {
 	value := new(big.Int)
 	switch v := ivalue.(type) {
 	case string:
@@ -56,7 +55,8 @@ func ToDecimal(ivalue interface{}, decimals int) decimal.Decimal {
 	num, _ := decimal.NewFromString(value.String())
 	result := num.Div(mul)
 
-	return result
+	
+	return result.BigFloat()
 }
 
 // ToWei decimals to wei
@@ -114,10 +114,10 @@ func SigRSV(isig interface{}) ([32]byte, [32]byte, uint8) {
 	return R, S, V
 }
 
-func FormatEther(balance *big.Int) *big.Float {
-	fbalance := new(big.Float)
-	fbalance.SetString(balance.String())
-	ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
+// func FormatEther(balance *big.Int) *big.Float {
+// 	fbalance := new(big.Float)
+// 	fbalance.SetString(balance.String())
+// 	ethValue := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18)))
 
-	return ethValue
-}
+// 	return ethValue
+// }

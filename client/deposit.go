@@ -27,32 +27,6 @@ type CoinStatusPayload struct {
 	Decimal       string `json:"decimal"`
 	TokenContract string `json:"token_contract"`
 	StarkAssetID  string `json:"stark_asset_id"`
-
-	// Name                               string `json:"name"`
-	// Symbol                             string `json:"symbol"`
-	// Type                               string `json:"type"`
-	// Fee                                string `json:"fee"`
-	// NewsName                           string `json:"news_name"`
-	// TradeFee                           string `json:"trade_fee"`
-	// ChartName                          string `json:"chart_name"`
-	// MinimumOrder                       string `json:"minimum_order"`
-	// MinimumWithdraw                    string `json:"minimum_withdraw"`
-	// MaximumOrder                       string `json:"maximum_order"`
-	// MinimumDeposit                     string `json:"minimum_deposit"`
-	// FrontendVisibility                 bool   `json:"frontend_visibility"`
-	// StarkexDepositsEnabled             bool   `json:"starkex_deposits_enabled"`
-	// StarkexDepositsEnabledFrontend     bool   `json:"starkex_deposits_enabled_frontend"`
-	// FastWithdrawalsEnabled             bool   `json:"fast_withdrawals_enabled"`
-	// FastWithdrawalFee                  string `json:"fast_withdrawal_fee"`
-	// MaxFastWithdrawalForPlatformPerDay string `json:"max_fast_withdrawal_for_platform_per_day"`
-	// MaxFastWithdrawalForUserPerDay     string `json:"max_fast_withdrawal_for_user_per_day"`
-	// MinFastWithdrawal                  string `json:"min_fast_withdrawal"`
-	// Color                              string `json:"color"`
-	// TradeDecimal                       string `json:"trade_decimal"`
-	// BlockchainDecimal                  string `json:"blockchain_decimal"`
-	// Chart                              string `json:"chart"`
-	// Logo                               string `json:"logo"`
-	// Description                        string `json:"description"`
 }
 
 type CoinStatusResponse struct {
@@ -188,6 +162,40 @@ func (c *Client) CryptoDepositStart(ctx context.Context, depositReq CryptoDeposi
 	return "", nil
 }
 
+
+func getTokenBalance (ctx context.Context, ethClient *ethclient.Client, ethAddress string, currency string, coinStatus CoinStatusPayload) (*big.Float, error) {
+	var balance *big.Int
+	ethAdr := common.HexToAddress(ethAddress)
+	decimal, err := strconv.Atoi(coinStatus.Decimal)
+	if err != nil {
+		return nil, err
+	}
+	switch currency {
+	case "ethereum":
+		balance, err = ethClient.BalanceAt(ctx, ethAdr, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return ToDecimal(balance, decimal), nil
+
+	default:
+		
+		ctr, err := contract.NewErc20(common.HexToAddress(coinStatus.TokenContract), ethClient)
+		if err != nil {
+			return nil, err
+		}
+
+		balance, err := ctr.BalanceOf(nil, ethAdr)
+		if err != nil {
+			return nil, err
+		}
+
+		
+		return ToDecimal(balance, decimal), nil
+	}
+}
+
 type DepositContract interface {
 	DepositEth(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int) (*types.Transaction, error)
 	DepositERC20(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int, quantizedAmount *big.Int) (*types.Transaction, error)
@@ -243,7 +251,6 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 		return "", err
 	}
 
-	// setting up the contract address and connecting to the contract
 	var addr common.Address
 	var ctr DepositContract
 
@@ -269,17 +276,24 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	log.Println("amountInWei", amountInWei)
 	log.Println("gwei", gwei)
 
-	// todo erc20 wali cheeze bhi
+	// todo check if this is covered or not
+	/*
+		const overrides = {
+			value: parsedAmount,
+			nonce: await getNonce(signer, provider),
+		}
+	*/
+
+
 	// getting balance information here
-	balance, err := ethClient.BalanceAt(ctx, common.HexToAddress(ethAddress), nil)
+	balance, err := getTokenBalance(ctx, ethClient, ethAddress, currency, coinStatus)
 	if err != nil {
 		return "", err
 	}
-	balanceInEth := FormatEther(balance)
-	log.Println("balance", balanceInEth)
+	log.Println("balance", balance)
 
 	// a more verbose error here could be possible
-	if balanceInEth.Cmp(big.NewFloat(amount)) == -1 {
+	if balance.Cmp(big.NewFloat(amount)) == -1 {
 		return "", ErrInsufficientBalance
 	}
 
@@ -417,12 +431,6 @@ func getAllowance(
 	return dequantize(allowance, decimal), nil
 }
 
-/*
-	export const dequantize = (number: number, decimals: number) => {
-	  const factor = 10 ** decimals
-	  return number / factor
-	}
-*/
 func dequantize(number *big.Int, decimals int) float64 {
 	factor := math.Pow10(decimals)
 	return float64(number.Int64()) / factor
@@ -445,8 +453,8 @@ Steps
 7.
 */
 
-	// ethAddr := "0xf318C11ff6E60115FB3e107bEa2637c060BEbc8C"
-	// ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
+// ethAddr := "0xf318C11ff6E60115FB3e107bEa2637c060BEbc8C"
+// ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
 
-	// starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
-	// starkPrivateKey := "0x7302fa58776da9f8fcf3631f4cb495a4dd0cdfab785e8b72a8a637d4bb14784"
+// starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
+// starkPrivateKey := "0x7302fa58776da9f8fcf3631f4cb495a4dd0cdfab785e8b72a8a637d4bb14784"
