@@ -36,9 +36,9 @@ func main() {
 		OrganizationKey:    organization_key,
 		ApiKey:             "BRINE_SALT",
 		ClientReferenceId:  "12345",
-		Currency:           "ethereum",
-		Amount:             0.001,
-		DestinationAddress: ethAddr,
+		Currency:           "usdc",
+		Amount:             1,
+		DestinationAddress: "0x4143112f2c877A26BD30cfEE8829202A65392845",
 	})
 	if err != nil {
 		log.Fatalln(err)
