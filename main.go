@@ -28,7 +28,7 @@ func main() {
 		panic(err)
 	}
 
-	hash, err := c.DepositFromEthereumNetworkWithStarkKey(context.TODO(), rpcURL, ethAddr, client.TESTNET, 0.001, "ethereum", starkPublicKey)
+	hash, err := c.DepositFromEthereumNetworkWithStarkKey(context.TODO(), rpcURL, ethAddr, client.TESTNET, 0.0001, "ethereum", starkPublicKey)
 	if err != nil {
 		panic(err)
 	}

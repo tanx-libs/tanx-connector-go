@@ -113,8 +113,8 @@ func (c *Client) GetVaultID(ctx context.Context, currency string) (int, error) {
 
 type CryptoDepositRequest struct {
 	Amount                 float64 `json:"amount"`
-	StarkAssetID           string  `json:"stark_asset_id"`
-	StarkPublicKey         string  `json:"stark_public_key"`
+	StarkAssetID           string  `json:"token_id"`
+	StarkPublicKey         string  `json:"stark_key"`
 	DepositBlockchainHash  string  `json:"deposit_blockchain_hash"`
 	DepositBlockchainNonce string  `json:"deposit_blockchain_nonce"`
 	VaultID                int     `json:"vault_id"`
@@ -162,43 +162,68 @@ func (c *Client) CryptoDepositStart(ctx context.Context, depositReq CryptoDeposi
 	return "", nil
 }
 
-
-func getTokenBalance (ctx context.Context, ethClient *ethclient.Client, ethAddress string, currency string, coinStatus CoinStatusPayload) (*big.Float, error) {
+func getTokenBalance(ctx context.Context, ethClient *ethclient.Client, ethAddress string, currency string, coinStatus CoinStatusPayload) (*big.Float, error) {
 	var balance *big.Int
+
 	ethAdr := common.HexToAddress(ethAddress)
 	decimal, err := strconv.Atoi(coinStatus.Decimal)
 	if err != nil {
 		return nil, err
 	}
+
 	switch currency {
 	case "ethereum":
+
 		balance, err = ethClient.BalanceAt(ctx, ethAdr, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		return ToDecimal(balance, decimal), nil
-
 	default:
-		
-		ctr, err := contract.NewErc20(common.HexToAddress(coinStatus.TokenContract), ethClient)
+		tokenAddr := common.HexToAddress(coinStatus.TokenContract)
+		ctr, err := contract.NewErc20(tokenAddr, ethClient)
 		if err != nil {
 			return nil, err
 		}
 
-		balance, err := ctr.BalanceOf(nil, ethAdr)
+		balance, err = ctr.BalanceOf(nil, ethAdr)
 		if err != nil {
 			return nil, err
 		}
-
-		
-		return ToDecimal(balance, decimal), nil
 	}
+
+	return ToDecimal(balance, decimal), nil
 }
 
 type DepositContract interface {
 	DepositEth(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int) (*types.Transaction, error)
 	DepositERC20(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int, quantizedAmount *big.Int) (*types.Transaction, error)
+}
+
+func getAllowance(
+	userAddress string,
+	starkContract string,
+	tokenContract string,
+	decimal int,
+	provider *ethclient.Client,
+) (float64, error) {
+	contractAddress := common.HexToAddress(tokenContract)
+	contract, err := contract.NewErc20(contractAddress, provider)
+	if err != nil {
+		return 0, err
+	}
+
+	allowance, err := contract.Allowance(nil, common.HexToAddress(userAddress), common.HexToAddress(starkContract))
+	if err != nil {
+		return 0, err
+	}
+
+	return dequantize(allowance, decimal), nil
+}
+
+func dequantize(number *big.Int, decimals int) float64 {
+	factor := math.Pow10(decimals)
+	return float64(number.Int64()) / factor
 }
 
 func (c *Client) DepositFromEthereumNetworkWithStarkKey(
@@ -284,7 +309,6 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 		}
 	*/
 
-
 	// getting balance information here
 	balance, err := getTokenBalance(ctx, ethClient, ethAddress, currency, coinStatus)
 	if err != nil {
@@ -309,57 +333,60 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	}
 
 	vaultIDBigInt := big.NewInt(int64(vaultID))
+
+	// todo ask this in input and also handle if 0x is there
+	ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
+	privateKey, err := crypto.HexToECDSA(ethPrivateKey)
+	if err != nil {
+		return "", err
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return "", fmt.Errorf("error casting public key to ECDSA")
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := ethClient.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		return "", err
+	}
+
+	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		return "", err
+	}
+
+	signerFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		chainID, err := ethClient.NetworkID(context.Background())
+		if err != nil {
+			return nil, err
+		}
+
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return signedTx, nil
+	}
+
+	opt := &bind.TransactOpts{
+		From:     fromAddress,
+		Nonce:    big.NewInt(int64(nonce)),
+		Signer:   signerFn,
+		GasPrice: gasPrice,
+		Value:    amountInWei,
+		Context:  ctx,
+	}
+
 	if currency == "ethereum" {
-
-		ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
-		privateKey, err := crypto.HexToECDSA(ethPrivateKey)
-		if err != nil {
-			return "", err
-		}
-		publicKey := privateKey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			return "", fmt.Errorf("error casting public key to ECDSA")
-		}
-		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		nonce, err := ethClient.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			return "", err
-		}
-
-		gasPrice, err := ethClient.SuggestGasPrice(context.Background())
-		if err != nil {
-			return "", err
-		}
-
-		signerFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			chainID, err := ethClient.NetworkID(context.Background())
-			if err != nil {
-				return nil, err
-			}
-
-			signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-			if err != nil {
-				return nil, err
-			}
-
-			return signedTx, nil
-		}
-
-		opt := &bind.TransactOpts{
-			From:     fromAddress,
-			Nonce:    big.NewInt(int64(nonce)),
-			Signer:   signerFn,
-			GasPrice: gasPrice,
-			Value:    amountInWei,
-			Context:  ctx,
-		}
 
 		transaction, err = ctr.DepositEth(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt)
 		if err != nil {
 			return "", err
 		}
 
+		log.Println("transaction", transaction)
 	} else {
 		decimal, err := strconv.Atoi(coinStatus.Decimal)
 		if err != nil {
@@ -375,65 +402,33 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 			return "", ErrInsufficientAllowance
 		}
 
-		// todo yaha peh opts shayad reuse hojayega
-		_, err = ctr.DepositERC20(&bind.TransactOpts{}, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt, big.NewInt(quantizedAmount))
+		transaction, err = ctr.DepositERC20(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt, big.NewInt(quantizedAmount))
+		if err != nil {
+			return "", err
+		}
 	}
 
-	// todo
-	// crpto deposit start wala bh kuch karna hain
-	_, err = c.CryptoDepositStart(ctx, CryptoDepositRequest{})
+	var starkAssetId string
+	if coinStatus.StarkAssetID[0:3] == "0x0" {
+		starkAssetId = "0x" + coinStatus.StarkAssetID[3:]
+	} else {
+		starkAssetId = coinStatus.StarkAssetID
+	}
+
+	// todo what amount goes into this
+	resp, err := c.CryptoDepositStart(ctx, CryptoDepositRequest{
+		Amount:                 amount,
+		StarkAssetID:           starkAssetId,
+		StarkPublicKey:         starkPublicKey,
+		DepositBlockchainHash:  transaction.Hash().Hex(),
+		DepositBlockchainNonce: fmt.Sprintf("%v", transaction.Nonce()),
+		VaultID:                vaultID,
+	})
 	if err != nil {
 		return "", err
 	}
 
-	return transaction.Hash().Hex(), nil
-}
-
-/*
-Can you make this javascript code like in golang
-
-export const getAllowance = async (
-
-	userAddress: string,
-	starkContract: string,
-	tokenContract: string,
-	decimal: number,
-	provider: ethers.providers.Provider,
-
-	) => {
-	  const contract = new ethers.Contract(
-	    tokenContract,
-	    CONFIG.ERC20_ABI,
-	    provider,
-	  )
-	  const allowance = await contract.allowance(userAddress, starkContract)
-	  return dequantize(Number(allowance), decimal)
-	}
-*/
-func getAllowance(
-	userAddress string,
-	starkContract string,
-	tokenContract string,
-	decimal int,
-	provider *ethclient.Client,
-) (float64, error) {
-	contractAddress := common.HexToAddress(tokenContract)
-	contract, err := contract.NewErc20(contractAddress, provider)
-	if err != nil {
-		return 0, err
-	}
-
-	allowance, err := contract.Allowance(nil, common.HexToAddress(userAddress), common.HexToAddress(starkContract))
-	if err != nil {
-		return 0, err
-	}
-
-	return dequantize(allowance, decimal), nil
-}
-
-func dequantize(number *big.Int, decimals int) float64 {
-	factor := math.Pow10(decimals)
-	return float64(number.Int64()) / factor
+	return resp, nil
 }
 
 // todo
@@ -441,20 +436,6 @@ func DepositFromEthereumNetwork(ctx context.Context, rpcURL string, ethPrivateKe
 }
 
 // todo docs
-/*
-Steps
+// todo rest of the polygon shit
 
-1. Check for amount
-2. Check if logged in or not
-3. Now get quanitization, decimal, tokenContract, starkAssetId from coin status endpoint
-4. Get vault id from vault id endpoint
-5. Now connect to the smart contract using rpcURL, contract_address, abi
-6. now make a getBalanceFunction
-7.
-*/
 
-// ethAddr := "0xf318C11ff6E60115FB3e107bEa2637c060BEbc8C"
-// ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
-
-// starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
-// starkPrivateKey := "0x7302fa58776da9f8fcf3631f4cb495a4dd0cdfab785e8b72a8a637d4bb14784"
