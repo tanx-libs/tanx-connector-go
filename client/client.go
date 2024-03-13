@@ -35,11 +35,11 @@ const (
 	CROSS_CHAIN_DEPOSIT_START_ENDPOINT = "sapi/v1/deposits/crosschain/create/"
 	LIST_DEPOSITS_ENDPOINT             = "sapi/v1/deposits/all"
 
-	INTERNAL_TRANSFER_INITIATE_ENDPOINT = "/sapi/v1/internal_transfers/v2/initiate/"
-	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = ""
-	INTERNAL_TRANSFER_GET_ENDPOINT      = ""
-	INTERNAL_TRANSFER_USER_ENDPOINT     = ""
-	INTERNAL_TRANSFER_LIST_ENDPOINT     = ""
+	INTERNAL_TRANSFER_INITIATE_ENDPOINT = "sapi/v1/internal_transfers/v2/initiate/"
+	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = "sapi/v1/internal_transfers/v2/process/"
+	INTERNAL_TRANSFER_GET_ENDPOINT      = "/sapi/v1/internal_transfers/v2/"
+	INTERNAL_TRANSFER_USER_ENDPOINT     = "/sapi/v1/internal_transfers/v2/check_user_exists/"
+	INTERNAL_TRANSFER_LIST_ENDPOINT     = "/sapi/v1/internal_transfers/v2/"
 
 	MAINET_STARK_CONTRACT  = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
 	TESTNET_STARK_CONTRACT = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"

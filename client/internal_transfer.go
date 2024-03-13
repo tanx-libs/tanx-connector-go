@@ -125,7 +125,7 @@ func (c *Client) InternalTransferProcess(ctx context.Context, opt InternalTransf
 		return InternalTransferProcessResponse{}, fmt.Errorf("error: %s", internalTransferProcessResponse.Message)
 	}
 
-	return InternalTransferProcessResponse{}, nil
+	return internalTransferProcessResponse, nil
 }
 
 // internal transfer create
@@ -163,7 +163,6 @@ func (c *Client) InternalTransferCreate(ctx context.Context, starkPrivateKey str
 	return internalTransferProcessResponse, nil
 }
 
-
 // internal transfer get
 type InternalTransferGetResponse struct {
 	Status  string `json:"status"`
@@ -186,9 +185,10 @@ func (c *Client) InternalTransferGet(ctx context.Context, clientReferenceId stri
 		return InternalTransferGetResponse{}, ErrNotLoggedIn
 	}
 
-	url := fmt.Sprintf("%s/%s", c.internalTransferGetURL.String(), clientReferenceId)
+	url := c.internalTransferGetURL.JoinPath(clientReferenceId)
+	log.Println(url.String())
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
 		return InternalTransferGetResponse{}, err
 	}
@@ -258,7 +258,7 @@ func (c *Client) InternalTransferUser(ctx context.Context, opt InternalTransferU
 		return InternalTransferUserResponse{}, fmt.Errorf("error: %s", internalTransferUserResponse.Message)
 	}
 
-	return InternalTransferUserResponse{}, nil
+	return internalTransferUserResponse, nil
 }
 
 // internal transfer list
@@ -280,7 +280,7 @@ type InternalTransferListResponse struct {
 }
 
 type InternalTransferListRequest struct {
-	Limit int `json:"limit"`
+	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 }
 
@@ -295,7 +295,7 @@ func (c *Client) InternalTransferList(ctx context.Context, opt InternalTransferL
 		return InternalTransferListResponse{}, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.internalTransferListURL.String(), bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.internalTransferListURL.String(), bytes.NewReader(reqBody))
 	if err != nil {
 		return InternalTransferListResponse{}, err
 	}
@@ -315,5 +315,5 @@ func (c *Client) InternalTransferList(ctx context.Context, opt InternalTransferL
 		return InternalTransferListResponse{}, fmt.Errorf("error: %s", internalTransferListResponse.Message)
 	}
 
-	return InternalTransferListResponse{}, nil
+	return internalTransferListResponse, nil
 }
