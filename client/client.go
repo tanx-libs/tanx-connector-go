@@ -7,7 +7,7 @@ import (
 
 // Specify mainet or testnet
 const (
-	MAINNET  = "https://api.tanx.fi"
+	MAINNET = "https://api.tanx.fi"
 	TESTNET = "https://api-testnet.tanx.fi"
 
 	HEALTH_ENDPOINT      = "sapi/v1/health/"
@@ -28,14 +28,14 @@ const (
 	ORDER_CREATE_ENDPOINT = "sapi/v1/orders/create/"
 	ORDER_CANCEL_ENDPOINT = "sapi/v1/orders/cancel/"
 
-	COIN_ENDPOINT           = "main/stat/v2/coins/"
-	VAULTID_ENDPOINT        = "main/user/create_vault/"
-	NETWORK_CONFIG_ENDPOINT = "main/stat/v2/app-and-markets/"
-	CRYPTO_DEPOSIT_START_ENDPOINT = "sapi/v1/payment/stark/start/"
+	COIN_ENDPOINT                      = "main/stat/v2/coins/"
+	VAULTID_ENDPOINT                   = "main/user/create_vault/"
+	NETWORK_CONFIG_ENDPOINT            = "main/stat/v2/app-and-markets/"
+	CRYPTO_DEPOSIT_START_ENDPOINT      = "sapi/v1/payment/stark/start/"
+	CROSS_CHAIN_DEPOSIT_START_ENDPOINT = "sapi/v1/deposits/crosschain/create/"
 
-
-	MAINET_STARK_CONTRACT   = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
-	TESTNET_STARK_CONTRACT  = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
+	MAINET_STARK_CONTRACT  = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
+	TESTNET_STARK_CONTRACT = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
 )
 
 /*
@@ -69,10 +69,11 @@ type Client struct {
 	orderCreateURL *url.URL
 	orderCancelURL *url.URL
 
-	coinURL          *url.URL
-	vaultIDURL       *url.URL
-	networkConfigURL *url.URL
-	cryptoDepositStartURL *url.URL
+	coinURL                   *url.URL
+	vaultIDURL                *url.URL
+	networkConfigURL          *url.URL
+	cryptoDepositStartURL     *url.URL
+	crossChainDepositStartURL *url.URL
 }
 
 func New(base string) (*Client, error) {
@@ -104,6 +105,7 @@ func New(base string) (*Client, error) {
 	vaultidurl := baseurl.JoinPath(VAULTID_ENDPOINT)
 	networkConfigurl := baseurl.JoinPath(NETWORK_CONFIG_ENDPOINT)
 	cryptoDepositStarturl := baseurl.JoinPath(CRYPTO_DEPOSIT_START_ENDPOINT)
+	crossChainDepositStarturl := baseurl.JoinPath(CROSS_CHAIN_DEPOSIT_START_ENDPOINT)
 
 	return &Client{
 		httpClient:   http.DefaultClient,
@@ -130,10 +132,11 @@ func New(base string) (*Client, error) {
 		orderCreateURL: ordercreateurl,
 		orderCancelURL: ordercancelurl,
 
-		coinURL:          coinurl,
-		vaultIDURL:       vaultidurl,
-		networkConfigURL: networkConfigurl,
+		coinURL:               coinurl,
+		vaultIDURL:            vaultidurl,
+		networkConfigURL:      networkConfigurl,
 		cryptoDepositStartURL: cryptoDepositStarturl,
+		crossChainDepositStartURL: crossChainDepositStarturl,
 	}, nil
 }
 
