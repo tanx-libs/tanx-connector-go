@@ -6,7 +6,7 @@ import (
 )
 
 // Specify mainet or testnet
-var (
+const (
 	MAINNET = "https://api.tanx.fi"
 	TESTNET = "https://api-testnet.tanx.fi"
 
@@ -28,16 +28,18 @@ var (
 	ORDER_CREATE_ENDPOINT = "sapi/v1/orders/create/"
 	ORDER_CANCEL_ENDPOINT = "sapi/v1/orders/cancel/"
 
-	COIN_ENDPOINT                 = "main/stat/v2/coins/"
-	VAULTID_ENDPOINT              = "main/user/create_vault/"
-	NETWORK_CONFIG_ENDPOINT       = "main/stat/v2/app-and-markets/"
-	CRYPTO_DEPOSIT_START_ENDPOINT = "sapi/v1/payment/stark/start/"
+	COIN_ENDPOINT                      = "main/stat/v2/coins/"
+	VAULTID_ENDPOINT                   = "main/user/create_vault/"
+	NETWORK_CONFIG_ENDPOINT            = "main/stat/v2/app-and-markets/"
+	CRYPTO_DEPOSIT_START_ENDPOINT      = "sapi/v1/payment/stark/start/"
+	CROSS_CHAIN_DEPOSIT_START_ENDPOINT = "sapi/v1/deposits/crosschain/create/"
+	LIST_DEPOSITS_ENDPOINT             = "sapi/v1/deposits/all"
 
 	INTERNAL_TRANSFER_INITIATE_ENDPOINT = "/sapi/v1/internal_transfers/v2/initiate/"
-	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = "/sapi/v1/internal_transfers/v2/process/"
-	INTERNAL_TRANSFER_GET_ENDPOINT      = "/sapi/v1/internal_transfers/v2/"
-	INTERNAL_TRANSFER_USER_ENDPOINT     = "/sapi/v1/internal_transfers/v2/check_user_exists/"
-	INTERNAL_TRANSFER_LIST_ENDPOINT     = "/sapi/v1/internal_transfers/v2/"
+	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = ""
+	INTERNAL_TRANSFER_GET_ENDPOINT      = ""
+	INTERNAL_TRANSFER_USER_ENDPOINT     = ""
+	INTERNAL_TRANSFER_LIST_ENDPOINT     = ""
 
 	MAINET_STARK_CONTRACT  = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
 	TESTNET_STARK_CONTRACT = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
@@ -75,13 +77,13 @@ type Client struct {
 	orderCreateURL *url.URL
 	orderCancelURL *url.URL
 
-	// deposit
-	coinURL               *url.URL
-	vaultIDURL            *url.URL
-	networkConfigURL      *url.URL
-	cryptoDepositStartURL *url.URL
+	coinURL                   *url.URL
+	vaultIDURL                *url.URL
+	networkConfigURL          *url.URL
+	cryptoDepositStartURL     *url.URL
+	crossChainDepositStartURL *url.URL
+	listDepositsURL           *url.URL
 
-	// transer
 	internalTransferInitiateURL *url.URL
 	internalTransferProcessURL  *url.URL
 	internalTransferGetURL      *url.URL
@@ -118,6 +120,8 @@ func New(base string) (*Client, error) {
 	vaultidurl := baseurl.JoinPath(VAULTID_ENDPOINT)
 	networkConfigurl := baseurl.JoinPath(NETWORK_CONFIG_ENDPOINT)
 	cryptoDepositStarturl := baseurl.JoinPath(CRYPTO_DEPOSIT_START_ENDPOINT)
+	crossChainDepositStarturl := baseurl.JoinPath(CROSS_CHAIN_DEPOSIT_START_ENDPOINT)
+	listDepositsurl := baseurl.JoinPath(LIST_DEPOSITS_ENDPOINT)
 
 	internalTransferInitiate := baseurl.JoinPath(INTERNAL_TRANSFER_INITIATE_ENDPOINT)
 	internalTransferProcess := baseurl.JoinPath(INTERNAL_TRANSFER_PROCESS_ENDPOINT)
@@ -150,10 +154,12 @@ func New(base string) (*Client, error) {
 		orderCreateURL: ordercreateurl,
 		orderCancelURL: ordercancelurl,
 
-		coinURL:               coinurl,
-		vaultIDURL:            vaultidurl,
-		networkConfigURL:      networkConfigurl,
-		cryptoDepositStartURL: cryptoDepositStarturl,
+		coinURL:                   coinurl,
+		vaultIDURL:                vaultidurl,
+		networkConfigURL:          networkConfigurl,
+		cryptoDepositStartURL:     cryptoDepositStarturl,
+		crossChainDepositStartURL: crossChainDepositStarturl,
+		listDepositsURL:           listDepositsurl,
 
 		internalTransferInitiateURL: internalTransferInitiate,
 		internalTransferProcessURL:  internalTransferProcess,
