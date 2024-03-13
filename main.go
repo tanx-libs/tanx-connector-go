@@ -20,20 +20,26 @@ func main() {
 	}
 	ethAddr := "0xf318C11ff6E60115FB3e107bEa2637c060BEbc8C"
 	ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
-	starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
+	// starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
 
-	// rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
-	rpcURLPolygon := "https://polygon-testnet.public.blastapi.io"
+	// // rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
+	// rpcURLPolygon := "https://polygon-testnet.public.blastapi.io"
 	_, _, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
 	if err != nil {
 		panic(err)
 	}
 
-	hash, err := c.DepositFromPolygonNetwork(context.TODO(), rpcURLPolygon, ethAddr, ethPrivateKey, starkPublicKey, "matic", 0.001)
+	// hash, err := c.DepositFromPolygonNetwork(context.TODO(), rpcURLPolygon, ethAddr, ethPrivateKey, starkPublicKey, "matic", 0.001)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("%+v", hash)
+
+	depos, err := c.ListAllDeposits(context.TODO())
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v", hash)
+	fmt.Printf("%+v", depos)
 
 	// // TODO chal nahi raha yeh patani kyu ?
 	// jc, err := client.New(client.TESTNET)

@@ -694,3 +694,160 @@ func (c *Client) DepositFromPolygonNetwork(ctx context.Context, rpcURL string, e
 	return c.DepositFromPolygonNetworkWithSigner(ctx, ethClient, signerFn, ethAddress, ethPrivateKey, starkPublicKey, amount, currency)
 }
 
+/*
+{
+  "status": "success",
+  "message": "",
+  "payload": {
+    "count": 10,
+    "next": null,
+    "previous": null,
+    "results": [
+      {
+        "token_id": "0x2adb57bf5c9f3613b96fd1d7517cac044d30a1f8b543ec74e2683290981c9d2",
+        "network": "POLYGON",
+        "amount": "100000",
+        "created_at": "2024-03-13T06:30:05.577537Z",
+        "blockchain_deposit_status": "Pending",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0xd91323f1d4ba970e5752b917cb1e554c50c055833e0c3ca12e79abd972a6fb21",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2adb57bf5c9f3613b96fd1d7517cac044d30a1f8b543ec74e2683290981c9d2",
+        "network": "POLYGON",
+        "amount": "100000",
+        "created_at": "2024-03-13T06:29:29.635819Z",
+        "blockchain_deposit_status": "Pending",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0x7bedcb1c4f195aa6592a362835cc78f576b5c6595e90ed1cc063f856e7ab502f",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2adb57bf5c9f3613b96fd1d7517cac044d30a1f8b543ec74e2683290981c9d2",
+        "network": "POLYGON",
+        "amount": "100000",
+        "created_at": "2024-03-13T06:26:05.365194Z",
+        "blockchain_deposit_status": "Pending",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0x9f917b406fe7b565c3ba3e7aa3bdbacc0789d75646afc1d497680219b16844c3",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2705737cd248ac819034b5de474c8f0368224f72a0fda9e031499d519992d9e",
+        "network": "ETHEREUM",
+        "amount": "0.0001",
+        "created_at": "2024-03-12T04:03:58.860038Z",
+        "blockchain_deposit_status": "Failed",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0xebe18390b4d097f56d1063281dacf0535689d6613acc03082d07dd4496db25ee",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2705737cd248ac819034b5de474c8f0368224f72a0fda9e031499d519992d9e",
+        "network": "ETHEREUM",
+        "amount": "0.0001",
+        "created_at": "2024-03-11T10:10:15.671312Z",
+        "blockchain_deposit_status": "Failed",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0xe525be00820178b153141d4f5936139159e0218d78a486b1de9d6499f2cbfd56",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2705737cd248ac819034b5de474c8f0368224f72a0fda9e031499d519992d9e",
+        "network": "ETHEREUM",
+        "amount": "1000000",
+        "created_at": "2024-03-11T10:09:59.639266Z",
+        "blockchain_deposit_status": "Failed",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0xe29fe6f45565695e9c30488e0508e94780e9c5167ed79aa1ce819eb2406e5cc5",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2705737cd248ac819034b5de474c8f0368224f72a0fda9e031499d519992d9e",
+        "network": "ETHEREUM",
+        "amount": "1000000",
+        "created_at": "2024-03-11T10:06:28.385397Z",
+        "blockchain_deposit_status": "Failed",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0xed286002e03ea2f2b840e3f6c2dbf4d13b7bbba5ff41e3c21e5fbab7c0390e9a",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2705737cd248ac819034b5de474c8f0368224f72a0fda9e031499d519992d9e",
+        "network": "ETHEREUM",
+        "amount": "10000000",
+        "created_at": "2024-03-11T09:59:56.211351Z",
+        "blockchain_deposit_status": "Failed",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0x38b9685e83b81e7a7a2651778bfb1c8c7cb5d821dd84c17e47be970f4484b7c8",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2705737cd248ac819034b5de474c8f0368224f72a0fda9e031499d519992d9e",
+        "network": "ETHEREUM",
+        "amount": "10000000",
+        "created_at": "2024-03-06T11:31:14.787998Z",
+        "blockchain_deposit_status": "Failed",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0xc3f7276ff66f81a612a64914c9478c390af54c0b522d697b8660abe053a2a6ad",
+        "platform_fees": null
+      },
+      {
+        "token_id": "0x2705737cd248ac819034b5de474c8f0368224f72a0fda9e031499d519992d9e",
+        "network": "ETHEREUM",
+        "amount": "10000000",
+        "created_at": "2024-03-06T11:30:44.546491Z",
+        "blockchain_deposit_status": "Failed",
+        "brine_deposit_status": "Pending",
+        "deposit_blockchain_hash": "0x939c6cb26804ccffa4477c359958df4497fad09e0dd28c48257333354b7275ce",
+        "platform_fees": null
+      }
+    ]
+  }
+}
+*/
+type ListDepositsResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Payload struct {
+		Count    int `json:"count"`
+		Next     interface{} `json:"next"`
+		Previous interface{} `json:"previous"`
+		Results  []struct {
+			TokenID               string `json:"token_id"`
+			Network               string `json:"network"`
+			Amount                string `json:"amount"`
+			CreatedAt             string `json:"created_at"`
+			BlockchainDepositHash string `json:"deposit_blockchain_hash"`
+		} `json:"results"`
+	} `json:"payload"`
+}
+
+func (c *Client) ListAllDeposits(ctx context.Context) (ListDepositsResponse, error) {
+	err := c.CheckAuth()
+	if err != nil {
+		return ListDepositsResponse{}, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.listDepositsURL.String(), nil)
+	if err != nil {
+		return ListDepositsResponse{}, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("JWT %s", c.jwtToken))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return ListDepositsResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	var listDepositsResponse ListDepositsResponse
+	err = json.NewDecoder(resp.Body).Decode(&listDepositsResponse)
+	if err != nil {
+		return ListDepositsResponse{}, err
+	}
+
+	return listDepositsResponse, nil
+}
