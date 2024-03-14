@@ -7,11 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"math/big"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,10 +20,11 @@ import (
 )
 
 type CoinStatusPayload struct {
-	Quanitization string `json:"quanitization"`
-	Decimal       string `json:"decimal"`
-	TokenContract string `json:"token_contract"`
-	StarkAssetID  string `json:"stark_asset_id"`
+	Symbol        Currency `json:"symbol"`
+	Quanitization string   `json:"quanitization"`
+	Decimal       string   `json:"decimal"`
+	TokenContract string   `json:"token_contract"`
+	StarkAssetID  string   `json:"stark_asset_id"`
 }
 
 type CoinStatusResponse struct {
@@ -34,7 +33,7 @@ type CoinStatusResponse struct {
 	Payload map[string]CoinStatusPayload `json:"payload"`
 }
 
-func (c *Client) GetCoinStatus(ctx context.Context, currency string) (CoinStatusPayload, error) {
+func (c *Client) GetCoinStatus(ctx context.Context, currency Currency) (CoinStatusPayload, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.coinURL.String(), nil)
 	if err != nil {
 		return CoinStatusPayload{}, err
@@ -52,12 +51,13 @@ func (c *Client) GetCoinStatus(ctx context.Context, currency string) (CoinStatus
 		return CoinStatusPayload{}, err
 	}
 
-	val, ok := coinStatusResponse.Payload[currency]
-	if !ok {
-		return CoinStatusPayload{}, ErrCoinNotFound
+	for _, v := range coinStatusResponse.Payload {
+		if v.Symbol == currency {
+			return v, nil
+		}
 	}
 
-	return val, nil
+	return CoinStatusPayload{}, ErrCoinNotFound
 }
 
 type VaultResponse struct {
@@ -70,10 +70,10 @@ type VaultResponse struct {
 }
 
 type VaultRequest struct {
-	Coin string `json:"coin"`
+	Coin Currency `json:"coin"`
 }
 
-func (c *Client) GetVaultID(ctx context.Context, currency string) (int, error) {
+func (c *Client) GetVaultID(ctx context.Context, currency Currency) (int, error) {
 	err := c.CheckAuth()
 	if err != nil {
 		return 0, nil
@@ -160,17 +160,18 @@ func (c *Client) CryptoDepositStart(ctx context.Context, depositReq CryptoDeposi
 	return cryptoDepositResponse, nil
 }
 
-func getTokenBalance(ctx context.Context, ethClient *ethclient.Client, ethAddress string, currency string, decimal string, contractAddress string) (*big.Float, error) {
+func getTokenBalance(ctx context.Context, ethClient *ethclient.Client, ethAddress string, currency Currency, decimal string, contractAddress string) (*big.Float, error) {
 	var balance *big.Int
 
 	ethAdr := common.HexToAddress(ethAddress)
+
 	d, err := strconv.Atoi(decimal)
 	if err != nil {
 		return nil, err
 	}
 
 	switch currency {
-	case "ethereum", "matic":
+	case ETH, MATIC:
 		balance, err = ethClient.BalanceAt(ctx, ethAdr, nil)
 		if err != nil {
 			return nil, err
@@ -214,13 +215,11 @@ func getAllowance(
 	if err != nil {
 		return 0, err
 	}
+	
 
-	return dequantize(allowance, decimal), nil
-}
-
-func dequantize(number *big.Int, decimals int) float64 {
-	factor := math.Pow10(decimals)
-	return float64(number.Int64()) / factor
+	res, _ := ToDecimal(allowance, decimal).Float64()
+	
+	return res, nil
 }
 
 func getTransactionOpt(ctx context.Context, ethClient *ethclient.Client, ethPrivateKey string, signerFn bind.SignerFn, amount float64, decimal int) (*bind.TransactOpts, error) {
@@ -272,7 +271,7 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	ethPrivateKey string,
 	starkPublicKey string,
 	amount float64,
-	currency string,
+	currency Currency,
 ) (CryptoDepositResponse, error) {
 	// check amount
 	if amount < 0 {
@@ -286,7 +285,6 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	}
 
 	// getting coin information here
-	currency = strings.ToLower(currency)
 	coinStatus, err := c.GetCoinStatus(ctx, currency)
 	if err != nil {
 		return CryptoDepositResponse{}, err
@@ -298,6 +296,7 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 		return CryptoDepositResponse{}, err
 	}
 	quantizedAmount := ToWei(amount, quan)
+	log.Printf("quantizedAmount: %+v", quantizedAmount)
 
 	// getting vault id here
 	vaultID, err := c.GetVaultID(ctx, currency)
@@ -331,7 +330,7 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
-	
+	log.Printf("balance: %f", balance)
 
 	// a more verbose error here could be possible
 	if balance.Cmp(big.NewFloat(amount)) == -1 {
@@ -343,7 +342,7 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	if !ok {
 		return CryptoDepositResponse{}, fmt.Errorf("failed to convert starkPublicKey to big.Int")
 	}
-	
+
 	log.Println(coinStatus.StarkAssetID)
 	starkAssetIDBigInt, ok := new(big.Int).SetString(coinStatus.StarkAssetID[2:], 16)
 	if !ok {
@@ -356,7 +355,7 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 
 	var opt *bind.TransactOpts
 
-	if currency == "ethereum" {
+	if currency == ETH {
 		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, 18)
 		if err != nil {
 			return CryptoDepositResponse{}, err
@@ -381,16 +380,18 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 		}
 
 		if allowance < amount {
-			return CryptoDepositResponse{}, ErrInsufficientAllowance
+			return CryptoDepositResponse{}, fmt.Errorf("insufficient allowance. Allowance amount is %v", allowance)
 		}
 
 		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, decimal)
 		if err != nil {
+			log.Println(1)
 			return CryptoDepositResponse{}, err
 		}
 
 		transaction, err = ctr.DepositERC20(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt, quantizedAmount)
 		if err != nil {
+			log.Println(2)
 			return CryptoDepositResponse{}, err
 		}
 	}
@@ -401,17 +402,6 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	} else {
 		starkAssetId = coinStatus.StarkAssetID
 	}
-
-	// todo what amount goes into this
-
-	fmt.Printf("%+v", CryptoDepositRequest{
-		Amount:                 quantizedAmount.String(),
-		StarkAssetID:           starkAssetId,
-		StarkPublicKey:         starkPublicKey,
-		DepositBlockchainHash:  transaction.Hash().Hex(),
-		DepositBlockchainNonce: fmt.Sprintf("%v", transaction.Nonce()),
-		VaultID:                vaultID,
-	})
 
 	resp, err := c.CryptoDepositStart(ctx, CryptoDepositRequest{
 		Amount:                 quantizedAmount.String(),
@@ -430,7 +420,7 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 }
 
 // todo
-func (c *Client) DepositFromEthereumNetwork(ctx context.Context, rpcURL string, ethAddress string, ethPrivateKey string, starkPublicKey string, network string, currency string, amount float64) (CryptoDepositResponse, error) {
+func (c *Client) DepositFromEthereumNetwork(ctx context.Context, rpcURL string, ethAddress string, ethPrivateKey string, starkPublicKey string, network string, currency Currency, amount float64) (CryptoDepositResponse, error) {
 	ethClient, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return CryptoDepositResponse{}, err
@@ -466,12 +456,12 @@ type CoinToken struct {
 }
 
 type NetworkConfigData struct {
-	DepositContract                 string               `json:"deposit_contract"`
-	Tokens                          map[string]CoinToken `json:"tokens"`
-	AllowedTokensForDeposit         []string             `json:"allowed_tokens_for_deposit"`
-	AllowedTokensForDepositFrontend []string             `json:"allowed_tokens_for_deposit_frontend"`
-	AllowedTokensForFastWd          []string             `json:"allowed_tokens_for_fast_wd"`
-	AllowedTokensForFastWdFrontend  []string             `json:"allowed_tokens_for_fast_wd_frontend"`
+	DepositContract                 string                 `json:"deposit_contract"`
+	Tokens                          map[Currency]CoinToken `json:"tokens"`
+	AllowedTokensForDeposit         []Currency             `json:"allowed_tokens_for_deposit"`
+	AllowedTokensForDepositFrontend []Currency             `json:"allowed_tokens_for_deposit_frontend"`
+	AllowedTokensForFastWd          []Currency             `json:"allowed_tokens_for_fast_wd"`
+	AllowedTokensForFastWdFrontend  []Currency             `json:"allowed_tokens_for_fast_wd_frontend"`
 }
 
 type NetworkConfigResponse struct {
@@ -508,7 +498,7 @@ func (c *Client) GetNetworkConfig(ctx context.Context) (NetworkConfigResponse, e
 	return networkConfigResponse, nil
 }
 
-func isPresent(allowedTokens []string, currency string) bool {
+func isPresent(allowedTokens []Currency, currency Currency) bool {
 	for _, v := range allowedTokens {
 		if v == currency {
 			return true
@@ -518,11 +508,11 @@ func isPresent(allowedTokens []string, currency string) bool {
 }
 
 type CrossChainDepositRequest struct {
-	Amount                 string `json:"amount"`
-	Currency               string `json:"currency"`
-	Network                string `json:"network"`
-	DepositBlockchainHash  string `json:"deposit_blockchain_hash"`
-	DepositBlockchainNonce string `json:"deposit_blockchain_nonce"`
+	Amount                 string   `json:"amount"`
+	Currency               Currency `json:"currency"`
+	Network                string   `json:"network"`
+	DepositBlockchainHash  string   `json:"deposit_blockchain_hash"`
+	DepositBlockchainNonce string   `json:"deposit_blockchain_nonce"`
 }
 
 func (c *Client) CrossChainDepositStart(ctx context.Context, crossChainDepositRequest CrossChainDepositRequest) (CryptoDepositResponse, error) {
@@ -567,7 +557,7 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 	ethPrivateKey string,
 	starkPublicKey string,
 	amount float64,
-	currency string,
+	currency Currency,
 ) (CryptoDepositResponse, error) {
 	// check amount
 	if amount < 0 {
@@ -667,7 +657,7 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 	return resp, nil
 }
 
-func (c *Client) DepositFromPolygonNetwork(ctx context.Context, rpcURL string, ethAddress string, ethPrivateKey string, starkPublicKey string, currency string, amount float64) (CryptoDepositResponse, error) {
+func (c *Client) DepositFromPolygonNetwork(ctx context.Context, rpcURL string, ethAddress string, ethPrivateKey string, starkPublicKey string, currency Currency, amount float64) (CryptoDepositResponse, error) {
 	ethClient, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return CryptoDepositResponse{}, err

@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, client.TESTNET, "btc", 0.001)
+	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, client.TESTNET, client.ETH, 0.0001)
 	if err != nil {
 		panic(err)
 	}

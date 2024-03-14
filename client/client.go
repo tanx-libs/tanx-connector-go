@@ -39,6 +39,24 @@ const (
 	TESTNET_STARK_CONTRACT = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
 )
 
+type Currency string
+
+const (
+	BTC Currency = "btc"
+    USDT Currency = "usdt"
+    ETH Currency = "eth"
+    USDC Currency = "usdc"
+    MATIC Currency = "matic"
+    ARB Currency = "arb"
+    LINK Currency = "link"
+    AAVE Currency = "aave"
+    MKR Currency = "mkr"
+    LDO Currency = "ldo"
+    RPL Currency = "rpl"
+    STRK Currency = "strk"
+    BERA Currency = "bera"
+)
+
 /*
 Maybe we can think of configuring client using a builder pattern. But that can be done later
 */
@@ -75,7 +93,7 @@ type Client struct {
 	networkConfigURL          *url.URL
 	cryptoDepositStartURL     *url.URL
 	crossChainDepositStartURL *url.URL
-	listDepositsURL		*url.URL
+	listDepositsURL           *url.URL
 }
 
 func New(base string) (*Client, error) {
@@ -140,7 +158,7 @@ func New(base string) (*Client, error) {
 		networkConfigURL:          networkConfigurl,
 		cryptoDepositStartURL:     cryptoDepositStarturl,
 		crossChainDepositStartURL: crossChainDepositStarturl,
-		listDepositsURL: listDepositsurl,
+		listDepositsURL:           listDepositsurl,
 	}, nil
 }
 
