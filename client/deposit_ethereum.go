@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"net/http"
@@ -110,12 +111,12 @@ func (c *Client) GetVaultID(ctx context.Context, currency string) (int, error) {
 }
 
 type CryptoDepositRequest struct {
-	Amount                 float64 `json:"amount"`
-	StarkAssetID           string  `json:"token_id"`
-	StarkPublicKey         string  `json:"stark_key"`
-	DepositBlockchainHash  string  `json:"deposit_blockchain_hash"`
-	DepositBlockchainNonce string  `json:"deposit_blockchain_nonce"`
-	VaultID                int     `json:"vault_id"`
+	Amount                 string `json:"amount"`
+	StarkAssetID           string `json:"token_id"`
+	StarkPublicKey         string `json:"stark_key"`
+	DepositBlockchainHash  string `json:"deposit_blockchain_hash"`
+	DepositBlockchainNonce string `json:"deposit_blockchain_nonce"`
+	VaultID                int    `json:"vault_id"`
 }
 
 type CryptoDepositResponse struct {
@@ -251,6 +252,7 @@ func getTransactionOpt(ctx context.Context, ethClient *ethclient.Client, ethPriv
 	}
 
 	amountInWei := ToWei(amount, decimal)
+	log.Println(amountInWei)
 	return &bind.TransactOpts{
 		From:     fromAddress,
 		Nonce:    big.NewInt(int64(nonce)),
@@ -291,16 +293,18 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	}
 
 	// quantization
-	q, err := strconv.Atoi(coinStatus.Quanitization)
+	quan, err := strconv.Atoi(coinStatus.Quanitization)
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
+	quantizedAmount := ToWei(amount, quan)
 
 	// getting vault id here
 	vaultID, err := c.GetVaultID(ctx, currency)
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
+	log.Printf("vault id: %+v", vaultID)
 
 	// building contract here
 	var starkaddr common.Address
@@ -327,6 +331,7 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
+	
 
 	// a more verbose error here could be possible
 	if balance.Cmp(big.NewFloat(amount)) == -1 {
@@ -338,26 +343,31 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	if !ok {
 		return CryptoDepositResponse{}, fmt.Errorf("failed to convert starkPublicKey to big.Int")
 	}
-
+	
+	log.Println(coinStatus.StarkAssetID)
 	starkAssetIDBigInt, ok := new(big.Int).SetString(coinStatus.StarkAssetID[2:], 16)
 	if !ok {
 		return CryptoDepositResponse{}, fmt.Errorf("failed to convert StarkAssetID to big.Int")
 	}
+	log.Printf("starkAssetIDBigInt: %+v", starkAssetIDBigInt)
 
 	vaultIDBigInt := big.NewInt(int64(vaultID))
+	log.Printf("vaultIDBigInt: %+v", vaultIDBigInt)
 
 	var opt *bind.TransactOpts
 
-	if currency == "eth" {
-
+	if currency == "ethereum" {
 		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, 18)
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
+		log.Printf("opt %+v", opt)
+
 		transaction, err = ctr.DepositEth(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt)
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
+		log.Println("transaction", transaction)
 
 	} else {
 		decimal, err := strconv.Atoi(coinStatus.Decimal)
@@ -379,7 +389,6 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 			return CryptoDepositResponse{}, err
 		}
 
-		quantizedAmount := ToWei(amount, q)
 		transaction, err = ctr.DepositERC20(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt, quantizedAmount)
 		if err != nil {
 			return CryptoDepositResponse{}, err
@@ -394,8 +403,18 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	}
 
 	// todo what amount goes into this
+
+	fmt.Printf("%+v", CryptoDepositRequest{
+		Amount:                 quantizedAmount.String(),
+		StarkAssetID:           starkAssetId,
+		StarkPublicKey:         starkPublicKey,
+		DepositBlockchainHash:  transaction.Hash().Hex(),
+		DepositBlockchainNonce: fmt.Sprintf("%v", transaction.Nonce()),
+		VaultID:                vaultID,
+	})
+
 	resp, err := c.CryptoDepositStart(ctx, CryptoDepositRequest{
-		Amount:                 amount,
+		Amount:                 quantizedAmount.String(),
 		StarkAssetID:           starkAssetId,
 		StarkPublicKey:         starkPublicKey,
 		DepositBlockchainHash:  transaction.Hash().Hex(),
