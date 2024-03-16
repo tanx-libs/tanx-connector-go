@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/tanx-libs/tanx-connector-go/client"
 )
@@ -24,12 +25,13 @@ func main() {
 
 	rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
 	// rpcURLPolygon := "https://polygon-testnet.public.blastapi.io"
-	_, _, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
+	_, jwt, err := c.Login(context.TODO(), ethAddr, ethPrivateKey)
 	if err != nil {
 		panic(err)
 	}
+	log.Printf("jwt %+v", jwt)
 
-	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, client.TESTNET, client.ETH, 0.0001)
+	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, client.TESTNET, client.BTC, 0.0001)
 	if err != nil {
 		panic(err)
 	}

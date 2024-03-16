@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,11 +21,12 @@ import (
 )
 
 type CoinStatusPayload struct {
-	Symbol        Currency `json:"symbol"`
-	Quanitization string   `json:"quanitization"`
-	Decimal       string   `json:"decimal"`
-	TokenContract string   `json:"token_contract"`
-	StarkAssetID  string   `json:"stark_asset_id"`
+	Symbol            Currency `json:"symbol"`
+	Quanitization     string   `json:"quanitization"`
+	Decimal           string   `json:"decimal"`
+	BlockchainDecimal string   `json:"blockchain_decimal"`
+	TokenContract     string   `json:"token_contract"`
+	StarkAssetID      string   `json:"stark_asset_id"`
 }
 
 type CoinStatusResponse struct {
@@ -190,6 +192,7 @@ func getTokenBalance(ctx context.Context, ethClient *ethclient.Client, ethAddres
 		}
 	}
 
+	log.Println("balance before decimal call", balance)
 	return ToDecimal(balance, d), nil
 }
 
@@ -215,10 +218,12 @@ func getAllowance(
 	if err != nil {
 		return 0, err
 	}
-	
 
+	log.Println("allowance", allowance)
+	log.Println("dec", decimal)
 	res, _ := ToDecimal(allowance, decimal).Float64()
-	
+	log.Println(13, ToDecimal(allowance, decimal))
+	log.Println(12, res)
 	return res, nil
 }
 
@@ -251,7 +256,8 @@ func getTransactionOpt(ctx context.Context, ethClient *ethclient.Client, ethPriv
 	}
 
 	amountInWei := ToWei(amount, decimal)
-	log.Println(amountInWei)
+	log.Println("amountInWei", amountInWei)
+
 	return &bind.TransactOpts{
 		From:     fromAddress,
 		Nonce:    big.NewInt(int64(nonce)),
@@ -289,21 +295,14 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
-
-	// quantization
-	quan, err := strconv.Atoi(coinStatus.Quanitization)
-	if err != nil {
-		return CryptoDepositResponse{}, err
-	}
-	quantizedAmount := ToWei(amount, quan)
-	log.Printf("quantizedAmount: %+v", quantizedAmount)
+	log.Printf("coinstatus %+v\n", coinStatus)
 
 	// getting vault id here
 	vaultID, err := c.GetVaultID(ctx, currency)
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
-	log.Printf("vault id: %+v", vaultID)
+	log.Printf("vault id: %+v\n", vaultID)
 
 	// building contract here
 	var starkaddr common.Address
@@ -325,12 +324,12 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 		return CryptoDepositResponse{}, err
 	}
 
-	// getting balance information here
-	balance, err := getTokenBalance(ctx, ethClient, ethAddress, currency, coinStatus.Decimal, coinStatus.TokenContract)
+	// Getting balance information here
+	balance, err := getTokenBalance(ctx, ethClient, ethAddress, currency, coinStatus.BlockchainDecimal, coinStatus.TokenContract)
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
-	log.Printf("balance: %f", balance)
+	log.Printf("balance: %+v\n", balance)
 
 	// a more verbose error here could be possible
 	if balance.Cmp(big.NewFloat(amount)) == -1 {
@@ -343,20 +342,39 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 		return CryptoDepositResponse{}, fmt.Errorf("failed to convert starkPublicKey to big.Int")
 	}
 
-	log.Println(coinStatus.StarkAssetID)
 	starkAssetIDBigInt, ok := new(big.Int).SetString(coinStatus.StarkAssetID[2:], 16)
 	if !ok {
 		return CryptoDepositResponse{}, fmt.Errorf("failed to convert StarkAssetID to big.Int")
 	}
-	log.Printf("starkAssetIDBigInt: %+v", starkAssetIDBigInt)
 
 	vaultIDBigInt := big.NewInt(int64(vaultID))
-	log.Printf("vaultIDBigInt: %+v", vaultIDBigInt)
 
 	var opt *bind.TransactOpts
 
+	// decimal
+	decimal, err := strconv.Atoi(coinStatus.Decimal)
+	if err != nil {
+		return CryptoDepositResponse{}, err
+	}
+	log.Printf("decimal: %d\n", decimal)
+
+	// blockchain decimal
+	blockchainDecimal, err := strconv.Atoi(coinStatus.BlockchainDecimal)
+	if err != nil {
+		return CryptoDepositResponse{}, err
+	}
+	log.Printf("blockchain decimal: %+v\n", blockchainDecimal)
+
+	// quantization
+	quantization, err := strconv.Atoi(coinStatus.Quanitization)
+	if err != nil {
+		return CryptoDepositResponse{}, nil
+	}
+	quantizedAmount := ToWei(amount, quantization)
+	log.Printf("quantized amount: %+v\n", quantizedAmount)
+
 	if currency == ETH {
-		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, 18)
+		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, blockchainDecimal)
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
@@ -369,29 +387,29 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 		log.Println("transaction", transaction)
 
 	} else {
-		decimal, err := strconv.Atoi(coinStatus.Decimal)
-		if err != nil {
-			return CryptoDepositResponse{}, err
-		}
-
 		allowance, err := getAllowance(ethAddress, starkaddr.String(), coinStatus.TokenContract, decimal, ethClient)
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
+		log.Printf("allowance: %f\n", allowance)
 
 		if allowance < amount {
 			return CryptoDepositResponse{}, fmt.Errorf("insufficient allowance. Allowance amount is %v", allowance)
 		}
 
-		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, decimal)
+		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, 0, decimal)
 		if err != nil {
-			log.Println(1)
 			return CryptoDepositResponse{}, err
 		}
 
+		opt.GasLimit, err = ethClient.EstimateGas(ctx, ethereum.CallMsg{})
+		if err != nil {
+			return CryptoDepositResponse{}, err
+		}
+		log.Printf("opt: %+v\n", opt)
+
 		transaction, err = ctr.DepositERC20(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt, quantizedAmount)
 		if err != nil {
-			log.Println(2)
 			return CryptoDepositResponse{}, err
 		}
 	}
