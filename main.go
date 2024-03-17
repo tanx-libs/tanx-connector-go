@@ -19,6 +19,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	ethAddr := "0xf318C11ff6E60115FB3e107bEa2637c060BEbc8C"
 	ethPrivateKey := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
 	starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
@@ -31,7 +32,7 @@ func main() {
 	}
 	log.Printf("jwt %+v", jwt)
 
-	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, client.TESTNET, client.BTC, 0.0001)
+	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, client.TESTNET, client.USDC, 1)
 	if err != nil {
 		panic(err)
 	}

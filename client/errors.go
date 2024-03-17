@@ -10,7 +10,9 @@ var (
 	ErrInvalidNetwork	= fmt.Errorf("invalid network")
 	ErrInsufficientBalance = fmt.Errorf("insufficient balance")
 	ErrInsufficientAllowance = fmt.Errorf("insufficient allowance")
+	ErrAllowanceTooLow = fmt.Errorf("allowance too low")
 )
+
 
 /*
 {"status":"error","message":"Buying ETH is disabled in Testnet temporarily","payload":""}

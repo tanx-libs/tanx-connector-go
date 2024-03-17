@@ -35,6 +35,12 @@ const (
 	CROSS_CHAIN_DEPOSIT_START_ENDPOINT = "sapi/v1/deposits/crosschain/create/"
 	LIST_DEPOSITS_ENDPOINT             = "sapi/v1/deposits/all"
 
+	INTERNAL_TRANSFER_INITIATE_ENDPOINT = "sapi/v1/internal_transfers/v2/initiate/"
+	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = "sapi/v1/internal_transfers/v2/process/"
+	INTERNAL_TRANSFER_GET_ENDPOINT      = "/sapi/v1/internal_transfers/v2/"
+	INTERNAL_TRANSFER_USER_ENDPOINT     = "/sapi/v1/internal_transfers/v2/check_user_exists/"
+	INTERNAL_TRANSFER_LIST_ENDPOINT     = "/sapi/v1/internal_transfers/v2/"
+
 	MAINET_STARK_CONTRACT  = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
 	TESTNET_STARK_CONTRACT = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
 )
@@ -83,6 +89,7 @@ type Client struct {
 	balanceURL *url.URL
 	pnlURL     *url.URL
 
+	// order
 	orderURL       *url.URL
 	orderNonceURL  *url.URL
 	orderCreateURL *url.URL
@@ -94,6 +101,12 @@ type Client struct {
 	cryptoDepositStartURL     *url.URL
 	crossChainDepositStartURL *url.URL
 	listDepositsURL           *url.URL
+
+	internalTransferInitiateURL *url.URL
+	internalTransferProcessURL  *url.URL
+	internalTransferGetURL      *url.URL
+	internalTransferUserURL     *url.URL
+	internalTransferListURL     *url.URL
 }
 
 func New(base string) (*Client, error) {
@@ -128,6 +141,12 @@ func New(base string) (*Client, error) {
 	crossChainDepositStarturl := baseurl.JoinPath(CROSS_CHAIN_DEPOSIT_START_ENDPOINT)
 	listDepositsurl := baseurl.JoinPath(LIST_DEPOSITS_ENDPOINT)
 
+	internalTransferInitiate := baseurl.JoinPath(INTERNAL_TRANSFER_INITIATE_ENDPOINT)
+	internalTransferProcess := baseurl.JoinPath(INTERNAL_TRANSFER_PROCESS_ENDPOINT)
+	internalTransferGet := baseurl.JoinPath(INTERNAL_TRANSFER_GET_ENDPOINT)
+	internalTransferUser := baseurl.JoinPath(INTERNAL_TRANSFER_USER_ENDPOINT)
+	internalTransferList := baseurl.JoinPath(INTERNAL_TRANSFER_LIST_ENDPOINT)
+
 	return &Client{
 		httpClient:   http.DefaultClient,
 		jwtToken:     "",
@@ -159,6 +178,12 @@ func New(base string) (*Client, error) {
 		cryptoDepositStartURL:     cryptoDepositStarturl,
 		crossChainDepositStartURL: crossChainDepositStarturl,
 		listDepositsURL:           listDepositsurl,
+
+		internalTransferInitiateURL: internalTransferInitiate,
+		internalTransferProcessURL:  internalTransferProcess,
+		internalTransferGetURL:      internalTransferGet,
+		internalTransferUserURL:     internalTransferUser,
+		internalTransferListURL:     internalTransferList,
 	}, nil
 }
 
