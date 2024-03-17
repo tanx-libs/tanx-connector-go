@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/tanx-libs/tanx-connector-go/crypto-cpp/build/Release/src/starkware/crypto/ffi/crypto_lib"
@@ -62,7 +61,7 @@ func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTrans
 		return InternalTransferInitiateResponse{}, fmt.Errorf("error: %s", internalTransferInitiateResponse.Message)
 	}
 
-	return InternalTransferInitiateResponse{}, nil
+	return internalTransferInitiateResponse, nil
 }
 
 // internal transfer process
@@ -134,15 +133,14 @@ func (c *Client) InternalTransferCreate(ctx context.Context, starkPrivateKey str
 	if err != nil {
 		return InternalTransferProcessResponse{}, err
 	}
-	log.Println("1", internalTransferInitiateResponse)
 
-	if starkPrivateKey[:1] != "0x" {
+	if starkPrivateKey[:2] != "0x" {
 		starkPrivateKey = "0x" + starkPrivateKey
 	}
 
-	msgHash := internalTransferInitiateResponse.Payload.MsgHash[2:]
+	msgHash := internalTransferInitiateResponse.Payload.MsgHash
+
 	r, s := crypto_lib.Sign(starkPrivateKey, msgHash, "0x1")
-	log.Println("2", r, s)
 
 	internalTransferProcessRequest := InternalTransferProcessRequest{
 		OrganizationKey: opt.OrganizationKey,
@@ -186,7 +184,6 @@ func (c *Client) InternalTransferGet(ctx context.Context, clientReferenceId stri
 	}
 
 	url := c.internalTransferGetURL.JoinPath(clientReferenceId)
-	log.Println(url.String())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
