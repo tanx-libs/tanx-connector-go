@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -42,7 +43,7 @@ type NetworkConfigResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Payload struct {
-		NetworkConfig map[string]NetworkConfigData `json:"network_config"`
+		NetworkConfig map[Network]NetworkConfigData `json:"network_config"`
 	} `json:"payload"`
 }
 
@@ -84,7 +85,7 @@ func isPresent(allowedTokens []Currency, currency Currency) bool {
 type CrossChainDepositRequest struct {
 	Amount                 string   `json:"amount"`
 	Currency               Currency `json:"currency"`
-	Network                string   `json:"network"`
+	Network                Network  `json:"network"`
 	DepositBlockchainHash  string   `json:"deposit_blockchain_hash"`
 	DepositBlockchainNonce string   `json:"deposit_blockchain_nonce"`
 }
@@ -149,7 +150,7 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 		return CryptoDepositResponse{}, err
 	}
 
-	polygonConfig := networkConfigResp.Payload.NetworkConfig["POLYGON"]
+	polygonConfig := networkConfigResp.Payload.NetworkConfig[POLYGON]
 	allowedTokens := polygonConfig.AllowedTokensForDeposit
 	contractAddress := polygonConfig.DepositContract
 
@@ -158,7 +159,7 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 	}
 
 	currentCoin := polygonConfig.Tokens[currency]
-	decimal, err := strconv.Atoi(currentCoin.BlockchainDecimal)
+	blockchainDecimal, err := strconv.Atoi(currentCoin.BlockchainDecimal)
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
@@ -173,6 +174,7 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
+	log.Println("balance: ", balance)
 
 	if balance.Cmp(big.NewFloat(amount)) == -1 {
 		return CryptoDepositResponse{}, ErrInsufficientBalance
@@ -181,8 +183,8 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 	var transaction *types.Transaction
 	var opt *bind.TransactOpts
 
-	if currency == "matic" {
-		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, decimal)
+	if currency == MATIC {
+		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, blockchainDecimal)
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
@@ -193,7 +195,45 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 		}
 
 	} else {
-		allowance, err := getAllowance(ethAddress, contractAddress, currentCoin.TokenContract, decimal, ethClient)
+
+		// setAllowance := func(amount int) error {
+		// 	tokenContractAddr := common.HexToAddress(currentCoin.TokenContract)
+
+		// 	erc20Contract, err := contract.NewErc20(tokenContractAddr, ethClient)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	opt, err := getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, 0, blockchainDecimal)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	opt.GasLimit, err = ethClient.EstimateGas(ctx, ethereum.CallMsg{
+		// 		From: tokenContractAddr,
+		// 	})
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	amountInWei := ToWei(float64(amount), blockchainDecimal)
+
+		// 	_, err = erc20Contract.Approve(opt, polygonAddr, amountInWei)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	log.Println("gas price: ", opt.GasPrice)
+		// 	log.Println("gas limit: ", opt.GasLimit)
+
+		// 	return nil
+		// }
+
+		// err = setAllowance(1)
+		// if err != nil {
+		// 	return CryptoDepositResponse{}, err
+		// }
+
+		allowance, err := getAllowance(ethAddress, contractAddress, currentCoin.TokenContract, blockchainDecimal, ethClient)
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
@@ -202,12 +242,15 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 			return CryptoDepositResponse{}, ErrInsufficientAllowance
 		}
 
-		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, amount, decimal)
+		opt, err = getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, 0, blockchainDecimal)
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
 
-		quantizedAmount := ToWei(amount, decimal)
+		opt.GasLimit = 100000
+		log.Printf("opt: %+v\n", opt)
+
+		quantizedAmount := ToWei(amount, blockchainDecimal)
 		address := common.HexToAddress(currentCoin.TokenContract)
 		transaction, err = ctr.Deposit(opt, address, quantizedAmount)
 		if err != nil {
@@ -218,7 +261,7 @@ func (c *Client) DepositFromPolygonNetworkWithSigner(
 	resp, err := c.CrossChainDepositStart(ctx, CrossChainDepositRequest{
 		Amount:                 fmt.Sprintf("%f", amount),
 		Currency:               currency,
-		Network:                "POLYGON",
+		Network:                POLYGON,
 		DepositBlockchainHash:  transaction.Hash().Hex(),
 		DepositBlockchainNonce: fmt.Sprintf("%v", transaction.Nonce()),
 	})
@@ -248,7 +291,7 @@ func (c *Client) DepositFromPolygonNetwork(ctx context.Context, rpcURL string, e
 			return nil, err
 		}
 
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+		signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainID), privateKey)
 		if err != nil {
 			return nil, err
 		}

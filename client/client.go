@@ -37,9 +37,16 @@ const (
 
 	INTERNAL_TRANSFER_INITIATE_ENDPOINT = "sapi/v1/internal_transfers/v2/initiate/"
 	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = "sapi/v1/internal_transfers/v2/process/"
-	INTERNAL_TRANSFER_GET_ENDPOINT      = "/sapi/v1/internal_transfers/v2/"
-	INTERNAL_TRANSFER_USER_ENDPOINT     = "/sapi/v1/internal_transfers/v2/check_user_exists/"
-	INTERNAL_TRANSFER_LIST_ENDPOINT     = "/sapi/v1/internal_transfers/v2/"
+	INTERNAL_TRANSFER_GET_ENDPOINT      = "sapi/v1/internal_transfers/v2/"
+	INTERNAL_TRANSFER_USER_ENDPOINT     = "sapi/v1/internal_transfers/v2/check_user_exists/"
+	INTERNAL_TRANSFER_LIST_ENDPOINT     = "sapi/v1/internal_transfers/v2/"
+
+	START_NORMAL_WITHDRAWAL_ENDPOINT    = "sapi/v1/payment/withdrawals/v1/initiate/"
+	VALIDATE_NORMAL_WITHDRAWAL_ENDPOINT = "sapi/v1/payment/withdrawals/v1/validate/"
+	START_FAST_WITHDRAWAL_ENDPOINT      = "sapi/v1/payment/fast-withdrawals/v2/initiate/"
+	PROCESS_FAST_WITHDRAWAL_ENDPOINT    = "sapi/v1/payment/fast-withdrawals/v2/process/"
+	LIST_NORMAL_WITHDRAWALS_ENDPOINT    = "sapi/v1/payment/withdrawals/"
+	LIST_FAST_WITHDRAWALS_ENDPOINT      = "sapi/v1/payment/fast-withdrawals/"
 
 	MAINET_STARK_CONTRACT  = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
 	TESTNET_STARK_CONTRACT = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
@@ -48,19 +55,34 @@ const (
 type Currency string
 
 const (
-	BTC Currency = "btc"
-    USDT Currency = "usdt"
-    ETH Currency = "eth"
-    USDC Currency = "usdc"
-    MATIC Currency = "matic"
-    ARB Currency = "arb"
-    LINK Currency = "link"
-    AAVE Currency = "aave"
-    MKR Currency = "mkr"
-    LDO Currency = "ldo"
-    RPL Currency = "rpl"
-    STRK Currency = "strk"
-    BERA Currency = "bera"
+	BTC   Currency = "btc"
+	USDT  Currency = "usdt"
+	ETH   Currency = "eth"
+	USDC  Currency = "usdc"
+	MATIC Currency = "matic"
+	ARB   Currency = "arb"
+	LINK  Currency = "link"
+	AAVE  Currency = "aave"
+	MKR   Currency = "mkr"
+	LDO   Currency = "ldo"
+	RPL   Currency = "rpl"
+	STRK  Currency = "strk"
+	BERA  Currency = "bera"
+)
+
+type Network string
+
+const (
+	ETHEREUM      Network = "ETHEREUM"
+	POLYGON       Network = "POLYGON"
+	STARKNET      Network = "STARKNET"
+	SCROLL        Network = "SCROLL"
+	OPTIMISM      Network = "OPTIMISM"
+	ARBITRUM      Network = "ARBITRUM"
+	LINEA         Network = "LINEA"
+	MODE          Network = "MODE"
+	POLYGON_ZKEVM Network = "ZKPOLY"
+	BERA_NETWORK  Network = "BERA"
 )
 
 /*
@@ -95,6 +117,7 @@ type Client struct {
 	orderCreateURL *url.URL
 	orderCancelURL *url.URL
 
+	// deposit
 	coinURL                   *url.URL
 	vaultIDURL                *url.URL
 	networkConfigURL          *url.URL
@@ -102,11 +125,20 @@ type Client struct {
 	crossChainDepositStartURL *url.URL
 	listDepositsURL           *url.URL
 
+	// internal transfer
 	internalTransferInitiateURL *url.URL
 	internalTransferProcessURL  *url.URL
 	internalTransferGetURL      *url.URL
 	internalTransferUserURL     *url.URL
 	internalTransferListURL     *url.URL
+
+	// withdraw
+	startNormalWithdrawalURL    *url.URL
+	validateNormalWithdrawalURL *url.URL
+	startFastWithdrawalURL      *url.URL
+	processFastWithdrawalURL    *url.URL
+	listNormalWithdrawalURL     *url.URL
+	listFastWithdrawalURL       *url.URL
 }
 
 func New(base string) (*Client, error) {
@@ -147,6 +179,13 @@ func New(base string) (*Client, error) {
 	internalTransferUser := baseurl.JoinPath(INTERNAL_TRANSFER_USER_ENDPOINT)
 	internalTransferList := baseurl.JoinPath(INTERNAL_TRANSFER_LIST_ENDPOINT)
 
+	startNormalWithdrawal := baseurl.JoinPath(START_NORMAL_WITHDRAWAL_ENDPOINT)
+	validateNormalWithdrawal := baseurl.JoinPath(VALIDATE_NORMAL_WITHDRAWAL_ENDPOINT)
+	startFastWithdrawal := baseurl.JoinPath(START_FAST_WITHDRAWAL_ENDPOINT)
+	processFastWithdrawal := baseurl.JoinPath(PROCESS_FAST_WITHDRAWAL_ENDPOINT)
+	listNormalWithdrawal := baseurl.JoinPath(LIST_NORMAL_WITHDRAWALS_ENDPOINT)
+	listFastWithdrawal := baseurl.JoinPath(LIST_FAST_WITHDRAWALS_ENDPOINT)
+
 	return &Client{
 		httpClient:   http.DefaultClient,
 		jwtToken:     "",
@@ -184,6 +223,13 @@ func New(base string) (*Client, error) {
 		internalTransferGetURL:      internalTransferGet,
 		internalTransferUserURL:     internalTransferUser,
 		internalTransferListURL:     internalTransferList,
+
+		startNormalWithdrawalURL:    startNormalWithdrawal,
+		validateNormalWithdrawalURL: validateNormalWithdrawal,
+		startFastWithdrawalURL:      startFastWithdrawal,
+		processFastWithdrawalURL:    processFastWithdrawal,
+		listNormalWithdrawalURL:     listNormalWithdrawal,
+		listFastWithdrawalURL:       listFastWithdrawal,
 	}, nil
 }
 
