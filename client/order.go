@@ -107,6 +107,7 @@ func (c *Client) OrderCreate(ctx context.Context, starkPrivateKey string, opt Or
 	}
 
 	if starkPrivateKey[:2] != "0x" {
+	if starkPrivateKey[:2] != "0x" {
 		starkPrivateKey = "0x" + starkPrivateKey
 	}
 
