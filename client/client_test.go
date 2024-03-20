@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// helper struct for mocking http.RoundTripper
+// using to simulate a roundtrip for a http network call
 type MockRoundTripper struct {
 	Response *http.Response
 	Delay    time.Duration
@@ -25,12 +25,21 @@ func (m *MockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	}
 }
 
-func TestClient(t *testing.T) {
-	t.Run("basic client initialization", func(t *testing.T) {
-		_, err := New(MAINET)
-		assert.NoError(t, err)
+// using when a funtion is dependent on multiple API calls underneath and we want to test the function without actually making the API calls
+type roundTripFunc func (r *http.Request) (*http.Response, error)
 
-		_, err = New(TESTNET)
-		assert.NoError(t, err)
-	})
+func (s roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return s(r)
+}
+
+
+func TestClient(t *testing.T) {
+	_, err := New(MAINNET)
+	assert.NoError(t, err)
+
+	c, err := New(TESTNET)
+	assert.NoError(t, err)
+
+	err = c.CheckAuth()
+	assert.Error(t, err)
 }

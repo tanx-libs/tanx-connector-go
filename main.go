@@ -23,7 +23,7 @@ func main() {
 	// first login
 	ethAddr := "0xF58001619C165cDd20B5F7A0EDa072Fd13943002"
 	ethPrivateKey := "e65c38b42af2e20540fde19d10bec7fb752ab58852e466151747abc08ae2494a"
-	_, _, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
+	_, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
 	if err != nil {
 		panic(err)
 	}
