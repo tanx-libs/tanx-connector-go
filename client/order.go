@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/tanx-libs/tanx-connector-go/crypto-cpp/build/Release/src/starkware/crypto/ffi/crypto_lib"
+	"github.com/tanx-libs/tanx-connector-go/crypto_cpp"
 )
 
 type OrderNonceRequest struct {
@@ -106,11 +106,11 @@ func (c *Client) OrderCreate(ctx context.Context, starkPrivateKey string, opt Or
 		return OrderCreateResponse{}, err
 	}
 
-	if starkPrivateKey[:1] != "0x" {
+	if starkPrivateKey[:2] != "0x" {
 		starkPrivateKey = "0x" + starkPrivateKey
 	}
 
-	r, s := crypto_lib.Sign(starkPrivateKey, orderNonceResponse.Payload.MsgHash, "0x1")
+	r, s := crypto_cpp.Sign(starkPrivateKey, orderNonceResponse.Payload.MsgHash, "0x1")
 
 	orderCreateRequest := OrderCreateRequest{
 		MsgHash: orderNonceResponse.Payload.MsgHash,
