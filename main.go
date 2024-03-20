@@ -1,50 +1,41 @@
 package main
 
 import (
+	"context"
 	"log"
 
-	"github.com/tanx-libs/tanx-connector-go/wsclient"
+	"github.com/tanx-libs/tanx-connector-go/client"
 )
 
 func main() {
-	var stopCh chan struct{}
-	var subUnsubCh chan wsclient.SubUnsubRequest
-
-	ws := wsclient.New()
-
-	wsSubUnsubEventHandler := func(event *wsclient.SubUnsubEvent) {
-		log.Printf("SubUnsub event: %+v\n", event)
-	}
-
-	wsTradeEventHandler := func(event *wsclient.TradeEvent) {
-		log.Printf("Trade event: %+v\n", event)
-
-		// example
-		subUnsubCh <- wsclient.SubUnsubTradeTopics(wsclient.SUBSCRIBE,[]string{"btcusdc", "ethusdc"})
-	}
-
-	wsErrHandler := func(err error) {
-		switch err {
-		case err.(*wsclient.ErrSubUnsub):
-			log.Println("SubUnsub error: ", err)
-			stopCh <- struct{}{}
-
-		default:
-			log.Println("Default: ", err)
-		}
-	}
-
-	doneCh, stopCh, subUnsubCh, err := ws.Trade([]string{"btcusdc", "ethusdc"}, wsTradeEventHandler, wsSubUnsubEventHandler, wsErrHandler)
+	c, err := client.New(client.TESTNET)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	select {
-	case <-stopCh:
-		log.Println("stopped was called")
+	e := "0xf318C11ff6E60115FB3e107bEa2637c060BEbc8C"
+	p := "ba169c79340371a9aa4fd516462f939242f92b522081d945c001b0fb3dc3a66f"
 
-	case <-doneCh:
-		log.Println("done was called")
+	_, err = c.Login(context.TODO(), e, p)
+	if err != nil {
+		panic(err)
 	}
+
+	bal, err := c.Balance(context.TODO(), client.ETH)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("%+v",bal)
+
+	// _, _, err = c.Login(context.TODO(), e, p)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// pnl, err := c.PNL(context.TODO())
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// fmt.Println(pnl)
 }
-

@@ -12,12 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHealth(t *testing.T) {
+func TestBalance(t *testing.T) {
 	testCases := []struct {
 		name         string
 		roundTripper http.RoundTripper
 		timeout      time.Duration
-		want         HealthResponse
+		currency     Currency
+		want         BalanceResponse
 		wantErr      bool
 	}{
 		{
@@ -26,16 +27,27 @@ func TestHealth(t *testing.T) {
 				Response: &http.Response{
 					StatusCode: http.StatusOK,
 					Body: io.NopCloser(strings.NewReader(`{
-                        "status": "success",
-                        "message": "Working fine!",
-                        "payload": ""
-                    }`)),
+						"status": "success",
+						"message": "Working fine!",
+						"payload": {
+							"currency": "btc",
+							"balance": "1.0",
+							"locked": "0.0",
+							"deposit_address": "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2"
+						}
+					}`)),
 				},
 			},
-			want: HealthResponse{
+			currency: BTC,
+			want: BalanceResponse{
 				Status:  "success",
 				Message: "Working fine!",
-				Payload: "",
+				Payload: BalancePayload{
+					Currency:       "btc",
+					Balance:        "1.0",
+					Locked:         "0.0",
+					DepositAddress: "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
+				},
 			},
 			wantErr: false,
 		},
@@ -68,6 +80,18 @@ func TestHealth(t *testing.T) {
 			timeout: time.Nanosecond,
 			wantErr: true,
 		},
+
+		{
+			name: "Invalid currency",
+			roundTripper: &MockRoundTripper{
+				Response: &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       io.NopCloser(strings.NewReader(`{"status": "error"}`)),
+				},
+			},
+			currency: "invalid",
+			wantErr:  true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -75,6 +99,8 @@ func TestHealth(t *testing.T) {
 			client, err := New(TESTNET)
 			assert.NoError(t, err)
 
+			client.jwtToken = "token"
+			client.refreshToken = "refresh"
 			client.httpClient.Transport = tc.roundTripper
 
 			ctx := context.Background()
@@ -84,7 +110,7 @@ func TestHealth(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.Health(ctx)
+			got, err := client.Balance(ctx, tc.currency)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -94,4 +120,3 @@ func TestHealth(t *testing.T) {
 		})
 	}
 }
-

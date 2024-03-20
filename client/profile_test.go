@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHealth(t *testing.T) {
+func TestProfile(t *testing.T) {
 	testCases := []struct {
 		name         string
 		roundTripper http.RoundTripper
 		timeout      time.Duration
-		want         HealthResponse
+		want         ProfileResponse
 		wantErr      bool
 	}{
 		{
@@ -26,16 +26,28 @@ func TestHealth(t *testing.T) {
 				Response: &http.Response{
 					StatusCode: http.StatusOK,
 					Body: io.NopCloser(strings.NewReader(`{
-                        "status": "success",
-                        "message": "Working fine!",
-                        "payload": ""
-                    }`)),
+						"status": "success",
+						"message": "Successful",
+						"payload": {
+						  "name": "USER NAME",
+						  "customer_id": "27",
+						  "img": null,
+						  "username": "guthal",
+						  "stark_key": "0x70f41ce6797eb444c9dc95a907....8aa592adf8f1fe3ab75317f7096d38"
+						}
+					  }`)),
 				},
 			},
-			want: HealthResponse{
+			want: ProfileResponse{
 				Status:  "success",
-				Message: "Working fine!",
-				Payload: "",
+				Message: "Successful",
+				Payload: ProfilePayload{
+					Name:       "USER NAME",
+					CustomerID: "27",
+					Img:        nil,
+					Username:   "guthal",
+					StarkKey:   "0x70f41ce6797eb444c9dc95a907....8aa592adf8f1fe3ab75317f7096d38",
+				},
 			},
 			wantErr: false,
 		},
@@ -68,6 +80,22 @@ func TestHealth(t *testing.T) {
 			timeout: time.Nanosecond,
 			wantErr: true,
 		},
+
+		// status 400
+		{
+			name: "Status 400",
+			roundTripper: &MockRoundTripper{
+				Response: &http.Response{
+					StatusCode: http.StatusBadRequest,
+					Body: io.NopCloser(strings.NewReader(`{
+						"status": "error",
+						"message": "Bad Request",
+						"payload": ""
+					}`)),
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -75,6 +103,8 @@ func TestHealth(t *testing.T) {
 			client, err := New(TESTNET)
 			assert.NoError(t, err)
 
+			client.jwtToken = "token"
+			client.refreshToken = "refrsh"
 			client.httpClient.Transport = tc.roundTripper
 
 			ctx := context.Background()
@@ -84,7 +114,7 @@ func TestHealth(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.Health(ctx)
+			got, err := client.Profile(ctx)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -94,4 +124,3 @@ func TestHealth(t *testing.T) {
 		})
 	}
 }
-
