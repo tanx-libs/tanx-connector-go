@@ -34,12 +34,24 @@ type NonceRequest struct {
 	EthAddress string `json:"eth_address"`
 }
 
+/*
+	{
+	  "status": "success",
+	  "message": "Cached Nonce Acquired",
+	  "payload": "You’re now signing into TanX, make sure the origin is https://testnet.tanx.fi (Login-code:Yvw9FHZ4JwyhuVobAZAWjd)"
+	}
+*/
 type NonceResponse struct {
-	Status  string `json:"status"`
+	Status  Status `json:"status"`
 	Message string `json:"message"`
 	Payload string `json:"payload"`
 }
 
+/*
+A nonce is a variable that is generated just once and can be used only one time.
+Generation of a nonce is the first step of the login process.
+The payload received in this step will be required in the next one.
+*/
 func (c *Client) Nonce(ctx context.Context, ethAddress string) (NonceResponse, error) {
 	nonceRequest := NonceRequest{EthAddress: ethAddress}
 
@@ -64,7 +76,24 @@ func (c *Client) Nonce(ctx context.Context, ethAddress string) (NonceResponse, e
 	var nonceResponse NonceResponse
 	err = json.NewDecoder(resp.Body).Decode(&nonceResponse)
 	if err != nil {
-		return NonceResponse{}, err
+		return NonceResponse{}, &ErrJSONDecoding{Err: err}
+	}
+
+	if nonceResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return NonceResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(nonceResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return NonceResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(nonceResponse.Message),
+			}
+		}
+
+		return NonceResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, nonceResponse.Message)
 	}
 
 	return nonceResponse, nil
@@ -86,7 +115,7 @@ type JWTPayload struct {
 }
 
 type JWTResponse struct {
-	Status  string     `json:"status"`
+	Status  Status     `json:"status"`
 	Message string     `json:"message"`
 	Payload JWTPayload `json:"payload"`
 	Token   Token      `json:"token"`
@@ -101,21 +130,21 @@ The payload received in this step will be required in the next one.
 
 Step 2: Payload is signed using the user's private key.
 
-Step 3: The signed payload is sent to the server along with the user's ethereum address. 
+Step 3: The signed payload is sent to the server along with the user's ethereum address.
 This basically logs the user in and returns a JWT token.
 
 Note: jwt token along with the refresh token are already stored in the client object for future use.
 So you don't need to store or pass it to any other function separately.
 */
-func (c *Client) Login(ctx context.Context, ethAddress string, privateKey string) (NonceResponse, JWTResponse, error) {
+func (c *Client) Login(ctx context.Context, ethAddress string, privateKey string) (JWTResponse, error) {
 	nonceResponse, err := c.Nonce(ctx, ethAddress)
 	if err != nil {
-		return NonceResponse{}, JWTResponse{}, err
+		return JWTResponse{}, err
 	}
 
 	signedPayload, err := SignPayload(nonceResponse.Payload, privateKey)
 	if err != nil {
-		return NonceResponse{}, JWTResponse{}, err
+		return JWTResponse{}, err
 	}
 
 	jwtRequest := JWTRequest{
@@ -125,31 +154,48 @@ func (c *Client) Login(ctx context.Context, ethAddress string, privateKey string
 
 	requestBody, err := json.Marshal(jwtRequest)
 	if err != nil {
-		return NonceResponse{}, JWTResponse{}, err
+		return JWTResponse{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.loginURL.String(), bytes.NewBuffer(requestBody))
 	if err != nil {
-		return NonceResponse{}, JWTResponse{}, err
+		return JWTResponse{}, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return NonceResponse{}, JWTResponse{}, err
+		return JWTResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	var jwtResponse JWTResponse
 	err = json.NewDecoder(resp.Body).Decode(&jwtResponse)
 	if err != nil {
-		return NonceResponse{}, JWTResponse{}, err
+		return JWTResponse{}, &ErrJSONDecoding{Err: err}
+	}
+
+	if jwtResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return JWTResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(jwtResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return JWTResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(jwtResponse.Message),
+			}
+		}
+
+		return JWTResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, nonceResponse.Message)
 	}
 
 	c.jwtToken = jwtResponse.Token.Access
 	c.refreshToken = jwtResponse.Token.Refresh
-	return nonceResponse, jwtResponse, nil
+	return jwtResponse, nil
 }
 
 type RefreshTokenRequest struct {
@@ -157,37 +203,64 @@ type RefreshTokenRequest struct {
 }
 
 
-func (c *Client) Relogin(ctx context.Context) (JWTResponse, error) {
+type RefreshTokenPayload struct {
+	Access  string `json:"access"`
+	Refresh string `json:"refresh"`
+}
+
+type RefreshTokenResponse struct {
+	Status  Status `json:"status"`
+	Message string `json:"message"`
+	Payload RefreshTokenPayload `json:"payload"`
+}
+
+func (c *Client) RefreshTokens(ctx context.Context) (RefreshTokenResponse, error) {
 	refreshRequest := RefreshTokenRequest{
 		Refresh: c.refreshToken,
 	}
 
 	requestBody, err := json.Marshal(refreshRequest)
 	if err != nil {
-		return JWTResponse{}, err
+		return RefreshTokenResponse{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.refreshTokenURL.String(), bytes.NewBuffer(requestBody))
 	if err != nil {
-		return JWTResponse{}, err
+		return RefreshTokenResponse{}, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return JWTResponse{}, err
+		return RefreshTokenResponse{}, err
 	}
 	defer resp.Body.Close()
 
-	var refreshResponse JWTResponse
+	var refreshResponse RefreshTokenResponse
 	err = json.NewDecoder(resp.Body).Decode(&refreshResponse)
 	if err != nil {
-		return JWTResponse{}, err
+		return RefreshTokenResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
-	c.jwtToken = refreshResponse.Token.Access
-	c.refreshToken = refreshResponse.Token.Refresh
+	if refreshResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return RefreshTokenResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(refreshResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return RefreshTokenResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(refreshResponse.Message),
+			}
+		}
 
+		return RefreshTokenResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, refreshResponse.Message)
+	}
+
+	c.jwtToken = refreshResponse.Payload.Access
+	c.refreshToken = refreshResponse.Payload.Refresh
 	return refreshResponse, nil
 }

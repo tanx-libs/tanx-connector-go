@@ -5,53 +5,67 @@ import (
 	"net/url"
 )
 
-// Specify mainet or testnet
+type Status string
+
 const (
-	MAINNET = "https://api.tanx.fi"
-	TESTNET = "https://api-testnet.tanx.fi"
+	SUCCESS Status = "success"
+	ERROR   Status = "error"
+)
 
-	HEALTH_ENDPOINT      = "sapi/v1/health/"
-	TICKER_ENDPOINT      = "sapi/v1/market/tickers/"
-	CANDLESTICK_ENDPOINT = "sapi/v1/market/kline/"
-	ORDERBOOK_ENDPOINT   = "sapi/v1/market/orderbook/"
-	TRADES_ENDPOINT      = "sapi/v1/market/trades/"
+// base url testnet/mainnet
+type BaseURL string
 
-	NONCE_ENDPOINT         = "sapi/v2/auth/nonce/"
-	LOGIN_ENDPOINT         = "sapi/v2/auth/login/"
-	REFRESH_TOKEN_ENDPOINT = "sapi/v2/auth/token/refresh/"
-	PROFILE_ENDPOINT       = "sapi/v1/user/profile/"
-	BALANCE_ENDPOINT       = "sapi/v1/user/balance/"
-	PNL_ENDPOINT           = "sapi/v1/user/pnl/"
+const (
+	MAINNET BaseURL = "https://api.tanx.fi"
+	TESTNET BaseURL = "https://api-testnet.tanx.fi"
+)
 
-	ORDER_BASE_ENDPOINT   = "sapi/v1/orders/"
-	ORDER_NONCE_ENDPOINT  = "sapi/v1/orders/nonce/"
-	ORDER_CREATE_ENDPOINT = "sapi/v1/orders/create/"
-	ORDER_CANCEL_ENDPOINT = "sapi/v1/orders/cancel/"
+// endpoints
+const (
+	HEALTH_ENDPOINT      = "/sapi/v1/health/"
+	TICKER_ENDPOINT      = "/sapi/v1/market/tickers/"
+	CANDLESTICK_ENDPOINT = "/sapi/v1/market/kline/"
+	ORDERBOOK_ENDPOINT   = "/sapi/v1/market/orderbook/"
+	TRADES_ENDPOINT      = "/sapi/v1/market/trades/"
 
-	COIN_ENDPOINT                      = "main/stat/v2/coins/"
-	VAULTID_ENDPOINT                   = "main/user/create_vault/"
-	NETWORK_CONFIG_ENDPOINT            = "main/stat/v2/app-and-markets/"
-	CRYPTO_DEPOSIT_START_ENDPOINT      = "sapi/v1/payment/stark/start/"
-	CROSS_CHAIN_DEPOSIT_START_ENDPOINT = "sapi/v1/deposits/crosschain/create/"
-	LIST_DEPOSITS_ENDPOINT             = "sapi/v1/deposits/all"
+	NONCE_ENDPOINT         = "/sapi/v2/auth/nonce/"
+	LOGIN_ENDPOINT         = "/sapi/v2/auth/login/"
+	REFRESH_TOKEN_ENDPOINT = "/sapi/v1/auth/token/refresh/"
+	PROFILE_ENDPOINT       = "/sapi/v1/user/profile/"
+	BALANCE_ENDPOINT       = "/sapi/v1/user/balance/"
+	PNL_ENDPOINT           = "/sapi/v1/user/pnl/"
 
-	INTERNAL_TRANSFER_INITIATE_ENDPOINT = "sapi/v1/internal_transfers/v2/initiate/"
-	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = "sapi/v1/internal_transfers/v2/process/"
-	INTERNAL_TRANSFER_GET_ENDPOINT      = "sapi/v1/internal_transfers/v2/"
-	INTERNAL_TRANSFER_USER_ENDPOINT     = "sapi/v1/internal_transfers/v2/check_user_exists/"
-	INTERNAL_TRANSFER_LIST_ENDPOINT     = "sapi/v1/internal_transfers/v2/"
+	ORDER_BASE_ENDPOINT                = "/sapi/v1/orders/"
+	ORDER_NONCE_ENDPOINT               = "/sapi/v1/orders/nonce/"
+	ORDER_CREATE_ENDPOINT              = "/sapi/v1/orders/create/"
+	ORDER_CANCEL_ENDPOINT              = "/sapi/v1/orders/cancel/"
+	TRADES_LIST_ENDPOINT               = "/sapi/v1/trades/"	
 
-	START_NORMAL_WITHDRAWAL_ENDPOINT    = "sapi/v1/payment/withdrawals/v1/initiate/"
-	VALIDATE_NORMAL_WITHDRAWAL_ENDPOINT = "sapi/v1/payment/withdrawals/v1/validate/"
-	START_FAST_WITHDRAWAL_ENDPOINT      = "sapi/v1/payment/fast-withdrawals/v2/initiate/"
-	PROCESS_FAST_WITHDRAWAL_ENDPOINT    = "sapi/v1/payment/fast-withdrawals/v2/process/"
-	LIST_NORMAL_WITHDRAWALS_ENDPOINT    = "sapi/v1/payment/withdrawals/"
-	LIST_FAST_WITHDRAWALS_ENDPOINT      = "sapi/v1/payment/fast-withdrawals/"
+	COIN_ENDPOINT                      = "/main/stat/v2/coins/"
+	VAULTID_ENDPOINT                   = "/main/user/create_vault/"
+	NETWORK_CONFIG_ENDPOINT            = "/main/stat/v2/app-and-markets/"
+	CRYPTO_DEPOSIT_START_ENDPOINT      = "/sapi/v1/payment/stark/start/"
+	CROSS_CHAIN_DEPOSIT_START_ENDPOINT = "/sapi/v1/deposits/crosschain/create/"
+	LIST_DEPOSITS_ENDPOINT             = "/sapi/v1/deposits/all/"
+
+	INTERNAL_TRANSFER_INITIATE_ENDPOINT = "/sapi/v1/internal_transfers/v2/initiate/"
+	INTERNAL_TRANSFER_PROCESS_ENDPOINT  = "/sapi/v1/internal_transfers/v2/process/"
+	INTERNAL_TRANSFER_GET_ENDPOINT      = "/sapi/v1/internal_transfers/v2/"
+	INTERNAL_TRANSFER_USER_ENDPOINT     = "/sapi/v1/internal_transfers/v2/check_user_exists/"
+	INTERNAL_TRANSFER_LIST_ENDPOINT     = "/sapi/v1/internal_transfers/v2/"
+
+	START_NORMAL_WITHDRAWAL_ENDPOINT    = "/sapi/v1/payment/withdrawals/v1/initiate/"
+	VALIDATE_NORMAL_WITHDRAWAL_ENDPOINT = "/sapi/v1/payment/withdrawals/v1/validate/"
+	START_FAST_WITHDRAWAL_ENDPOINT      = "/sapi/v1/payment/fast-withdrawals/v2/initiate/"
+	PROCESS_FAST_WITHDRAWAL_ENDPOINT    = "/sapi/v1/payment/fast-withdrawals/v2/process/"
+	LIST_NORMAL_WITHDRAWALS_ENDPOINT    = "/sapi/v1/payment/withdrawals/"
+	LIST_FAST_WITHDRAWALS_ENDPOINT      = "/sapi/v1/payment/fast-withdrawals/"
 
 	MAINET_STARK_CONTRACT  = "0x1390f521A79BaBE99b69B37154D63D431da27A07"
 	TESTNET_STARK_CONTRACT = "0xA2eC709125Ea693f5522aEfBBC3cb22fb9146B52"
 )
 
+// token/currency name
 type Currency string
 
 const (
@@ -70,6 +84,7 @@ const (
 	BERA  Currency = "bera"
 )
 
+// network name
 type Network string
 
 const (
@@ -85,15 +100,11 @@ const (
 	BERA_NETWORK  Network = "BERA"
 )
 
-/*
-Maybe we can think of configuring client using a builder pattern. But that can be done later
-*/
 type Client struct {
 	httpClient   *http.Client
 	jwtToken     string
 	refreshToken string
 
-	// public
 	baseURL        *url.URL
 	healthURL      *url.URL
 	tickerURL      *url.URL
@@ -106,7 +117,7 @@ type Client struct {
 	loginURL        *url.URL
 	refreshTokenURL *url.URL
 
-	// protected
+	// user
 	profileURL *url.URL
 	balanceURL *url.URL
 	pnlURL     *url.URL
@@ -116,6 +127,7 @@ type Client struct {
 	orderNonceURL  *url.URL
 	orderCreateURL *url.URL
 	orderCancelURL *url.URL
+	tradesListURL  *url.URL
 
 	// deposit
 	coinURL                   *url.URL
@@ -141,7 +153,8 @@ type Client struct {
 	listFastWithdrawalURL       *url.URL
 }
 
-func New(base string) (*Client, error) {
+// create new client
+func New(base BaseURL) (*Client, error) {
 	baseurl, err := url.Parse(string(base))
 	if err != nil {
 		return nil, err
@@ -165,6 +178,7 @@ func New(base string) (*Client, error) {
 	ordernonceurl := baseurl.JoinPath(ORDER_NONCE_ENDPOINT)
 	ordercreateurl := baseurl.JoinPath(ORDER_CREATE_ENDPOINT)
 	ordercancelurl := baseurl.JoinPath(ORDER_CANCEL_ENDPOINT)
+	tradesListurl := baseurl.JoinPath(TRADES_LIST_ENDPOINT)
 
 	coinurl := baseurl.JoinPath(COIN_ENDPOINT)
 	vaultidurl := baseurl.JoinPath(VAULTID_ENDPOINT)
@@ -210,6 +224,7 @@ func New(base string) (*Client, error) {
 		orderNonceURL:  ordernonceurl,
 		orderCreateURL: ordercreateurl,
 		orderCancelURL: ordercancelurl,
+		tradesListURL:  tradesListurl,
 
 		coinURL:                   coinurl,
 		vaultIDURL:                vaultidurl,
