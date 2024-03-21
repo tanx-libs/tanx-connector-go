@@ -308,11 +308,11 @@ func (c *Client) DepositFromEthereumNetworkWithStarkKey(
 	var ctr DepositContract
 
 	switch network {
-	case TESTNET:
+	case string(TESTNET):
 		starkaddr = common.HexToAddress(TESTNET_STARK_CONTRACT)
 		ctr, err = contract.NewDepositTestnet(starkaddr, ethClient)
 
-	case MAINNET:
+	case string(MAINNET):
 		starkaddr = common.HexToAddress(MAINET_STARK_CONTRACT)
 		ctr, err = contract.NewDepositMainnet(starkaddr, ethClient)
 

@@ -17,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/tanx-libs/tanx-connector-go/contract"
-	"github.com/tanx-libs/tanx-connector-go/crypto-cpp/build/Release/src/starkware/crypto/ffi/crypto_lib"
+	"github.com/tanx-libs/tanx-connector-go/crypto_cpp"
 )
 
 /*
@@ -179,7 +179,7 @@ func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey s
 	msgHash := hexutil.EncodeBig(numBig)
 	log.Println("msgHash", msgHash)
 
-	r, s := crypto_lib.Sign(starkPrivateKey, msgHash, "0x1")
+	r, s := crypto_cpp.Sign(starkPrivateKey, msgHash, "0x1")
 	log.Println("r", r)
 	log.Println("s", s)
 
@@ -223,11 +223,11 @@ func (c *Client) GetPendingNormalWithdrawalAmountByCoin(ctx context.Context, cur
 	var ctr WithdrawalContract
 
 	switch network {
-	case TESTNET:
+	case string(TESTNET):
 		starkaddr = common.HexToAddress(TESTNET_STARK_CONTRACT)
 		ctr, err = contract.NewDepositTestnet(starkaddr, ethClient)
 
-	case MAINNET:
+	case string(MAINNET):
 		starkaddr = common.HexToAddress(MAINET_STARK_CONTRACT)
 		ctr, err = contract.NewDepositMainnet(starkaddr, ethClient)
 
@@ -281,11 +281,11 @@ func (c *Client) CompleteNormalWithdrawal(ctx context.Context, currency Currency
 	var ctr WithdrawalContract
 
 	switch network {
-	case TESTNET:
+	case string(TESTNET):
 		starkaddr = common.HexToAddress(TESTNET_STARK_CONTRACT)
 		ctr, err = contract.NewDepositTestnet(starkaddr, ethClient)
 
-	case MAINNET:
+	case string(MAINNET):
 		starkaddr = common.HexToAddress(MAINET_STARK_CONTRACT)
 		ctr, err = contract.NewDepositMainnet(starkaddr, ethClient)
 
@@ -550,7 +550,7 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 		starkPrivateKey = "0x" + starkPrivateKey
 	}
 
-	r, s := crypto_lib.Sign(starkPrivateKey, respStart.Payload.MsgHash, "0x1")
+	r, s := crypto_cpp.Sign(starkPrivateKey, respStart.Payload.MsgHash, "0x1")
 	log.Println("r", r)
 	log.Println("s", s)
 
