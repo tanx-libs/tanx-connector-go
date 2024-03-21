@@ -39,6 +39,8 @@ const (
 	ORDER_NONCE_ENDPOINT               = "/sapi/v1/orders/nonce/"
 	ORDER_CREATE_ENDPOINT              = "/sapi/v1/orders/create/"
 	ORDER_CANCEL_ENDPOINT              = "/sapi/v1/orders/cancel/"
+	TRADES_LIST_ENDPOINT               = "/sapi/v1/trades/"	
+
 	COIN_ENDPOINT                      = "/main/stat/v2/coins/"
 	VAULTID_ENDPOINT                   = "/main/user/create_vault/"
 	NETWORK_CONFIG_ENDPOINT            = "/main/stat/v2/app-and-markets/"
@@ -125,6 +127,7 @@ type Client struct {
 	orderNonceURL  *url.URL
 	orderCreateURL *url.URL
 	orderCancelURL *url.URL
+	tradesListURL  *url.URL
 
 	// deposit
 	coinURL                   *url.URL
@@ -175,6 +178,7 @@ func New(base BaseURL) (*Client, error) {
 	ordernonceurl := baseurl.JoinPath(ORDER_NONCE_ENDPOINT)
 	ordercreateurl := baseurl.JoinPath(ORDER_CREATE_ENDPOINT)
 	ordercancelurl := baseurl.JoinPath(ORDER_CANCEL_ENDPOINT)
+	tradesListurl := baseurl.JoinPath(TRADES_LIST_ENDPOINT)
 
 	coinurl := baseurl.JoinPath(COIN_ENDPOINT)
 	vaultidurl := baseurl.JoinPath(VAULTID_ENDPOINT)
@@ -220,6 +224,7 @@ func New(base BaseURL) (*Client, error) {
 		orderNonceURL:  ordernonceurl,
 		orderCreateURL: ordercreateurl,
 		orderCancelURL: ordercancelurl,
+		tradesListURL:  tradesListurl,
 
 		coinURL:                   coinurl,
 		vaultIDURL:                vaultidurl,

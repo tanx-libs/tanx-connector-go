@@ -241,8 +241,6 @@ func TestRefreshTokens(t *testing.T) {
 	}
 }
 
-
-
 func TestLogin(t *testing.T) {
 	testCases := []struct {
 		name         string
