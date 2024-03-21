@@ -29,16 +29,27 @@ func main() {
 	}
 
 	// add correct valueshere to test the order
-	starkPrivateKey := "588ad6325783739b3806e27feebeb1c270d4c6875c29517ff1d689e777b13a6"
-	order, err := c.OrderCreate(context.TODO(), starkPrivateKey, client.OrderOptions{
-		Market:  "btcusdc",
-		OrdType: "market",
-		Side:    "buy",
-		Volume:  0.0001,
-	})
+	// starkPrivateKey := "588ad6325783739b3806e27feebeb1c270d4c6875c29517ff1d689e777b13a6"
+	// order, err := c.OrderCreate(context.TODO(), starkPrivateKey, client.OrderOptions{
+	// 	Market:  "btcusdc",
+	// 	OrdType: "market",
+	// 	Side:    "buy",
+	// 	Volume:  0.0001,
+	// })
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+
+	// order, err := c.OrdersList(context.TODO(), client.OrderListOptions{
+	// 	Limit: 3,
+	// })
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	order, err := c.OrderGet(context.TODO(), 1254)
 	if err != nil {
 		log.Println(err)
 	}
 
-	fmt.Println(order)
+	fmt.Printf("%+v", order)
 }
