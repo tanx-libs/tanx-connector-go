@@ -130,6 +130,7 @@ type Client struct {
 	tradesListURL  *url.URL
 
 	// deposit
+	// deposit
 	coinURL                   *url.URL
 	vaultIDURL                *url.URL
 	networkConfigURL          *url.URL
@@ -137,6 +138,7 @@ type Client struct {
 	crossChainDepositStartURL *url.URL
 	listDepositsURL           *url.URL
 
+	// internal transfer
 	// internal transfer
 	internalTransferInitiateURL *url.URL
 	internalTransferProcessURL  *url.URL
@@ -200,6 +202,7 @@ func New(base BaseURL) (*Client, error) {
 	listNormalWithdrawal := baseurl.JoinPath(LIST_NORMAL_WITHDRAWALS_ENDPOINT)
 	listFastWithdrawal := baseurl.JoinPath(LIST_FAST_WITHDRAWALS_ENDPOINT)
 
+
 	return &Client{
 		httpClient:   http.DefaultClient,
 		jwtToken:     "",
@@ -245,6 +248,8 @@ func New(base BaseURL) (*Client, error) {
 		processFastWithdrawalURL:    processFastWithdrawal,
 		listNormalWithdrawalURL:     listNormalWithdrawal,
 		listFastWithdrawalURL:       listFastWithdrawal,
+
+
 	}, nil
 }
 
