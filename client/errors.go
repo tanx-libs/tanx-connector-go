@@ -8,11 +8,12 @@ var (
 	ErrNotLoggedIn           = fmt.Errorf("not logged in, please login first as this is a protected endpoint")
 	ErrCoinNotFound          = fmt.Errorf("coin not found")
 	ErrInvalidNetwork        = fmt.Errorf("invalid network")
-	ErrInsufficientBalance   = fmt.Errorf("insufficient balance")
 	ErrInsufficientAllowance = fmt.Errorf("insufficient allowance")
 	ErrAllowanceTooLow       = fmt.Errorf("allowance too low")
 	ErrAlreadyLoggedIn       = fmt.Errorf("already logged in")
 )
+
+
 
 // json decoding error
 type ErrJSONDecoding struct {
