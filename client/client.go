@@ -219,10 +219,10 @@ func New(base BaseURL) (*Client, error) {
 
 	return &Client{
 		network:                     base,
-		ethereumNetworkAllowance:    -1,
+		ethereumNetworkAllowance:    100, // default allowance
 		ethereumNetworkAllowanceSet: false,
 
-		polygonNetworkAllowance:    -1,
+		polygonNetworkAllowance:    100, // default allowance
 		polygonNetworkAllowanceSet: false,
 
 		httpClient:   http.DefaultClient,

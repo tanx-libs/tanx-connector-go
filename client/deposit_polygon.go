@@ -203,44 +203,6 @@ func (c *Client) DepositFromPolygonNetwork(
 		}
 
 	} else {
-
-		// setAllowance := func(amount int) error {
-		// 	tokenContractAddr := common.HexToAddress(currentCoin.TokenContract)
-
-		// 	erc20Contract, err := contract.NewErc20(tokenContractAddr, ethClient)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	opt, err := getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, 0, blockchainDecimal)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	opt.GasLimit, err = ethClient.EstimateGas(ctx, ethereum.CallMsg{
-		// 		From: tokenContractAddr,
-		// 	})
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	amountInWei := ToWei(float64(amount), blockchainDecimal)
-
-		// 	_, err = erc20Contract.Approve(opt, polygonAddr, amountInWei)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	log.Println("gas price: ", opt.GasPrice)
-		// 	log.Println("gas limit: ", opt.GasLimit)
-
-		// 	return nil
-		// }
-
-		// err = setAllowance(1)
-		// if err != nil {
-		// 	return CryptoDepositResponse{}, err
-		// }
-
 		opt, err := getTransactionOpt(ctx, c.polygonClient, ethPrivateKey, signerFn, 0, blockchainDecimal)
 		if err != nil {
 			return CryptoDepositResponse{}, err
@@ -364,3 +326,48 @@ func (c *Client) ListAllDeposits(ctx context.Context) (ListDepositsResponse, err
 
 	return listDepositsResponse, nil
 }
+
+
+
+
+
+/*
+
+
+		// setAllowance := func(amount int) error {
+		// 	tokenContractAddr := common.HexToAddress(currentCoin.TokenContract)
+
+		// 	erc20Contract, err := contract.NewErc20(tokenContractAddr, ethClient)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	opt, err := getTransactionOpt(ctx, ethClient, ethPrivateKey, signerFn, 0, blockchainDecimal)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	opt.GasLimit, err = ethClient.EstimateGas(ctx, ethereum.CallMsg{
+		// 		From: tokenContractAddr,
+		// 	})
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	amountInWei := ToWei(float64(amount), blockchainDecimal)
+
+		// 	_, err = erc20Contract.Approve(opt, polygonAddr, amountInWei)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	log.Println("gas price: ", opt.GasPrice)
+		// 	log.Println("gas limit: ", opt.GasLimit)
+
+		// 	return nil
+		// }
+
+		// err = setAllowance(1)
+		// if err != nil {
+		// 	return CryptoDepositResponse{}, err
+		// }
+*/
