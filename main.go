@@ -41,9 +41,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("%+v", hash)
-		panic(err)
-	}
-	fmt.Printf("%+v", hash)
 
 	// // polygon deposits
 	// rpcURL2 := "https://polygon-mumbai-bor-rpc.publicnode.com"
