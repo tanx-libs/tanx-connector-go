@@ -118,6 +118,87 @@ func (c *Client) CrossChainDepositStart(ctx context.Context, crossChainDepositRe
 	return cryptoDepositResponse, nil
 }
 
+func (c *Client) polygonInit(ctx context.Context, rpcURL string) error {
+	if c.polygonClient == nil {
+		polygonClient, err := ethclient.Dial(rpcURL)
+		if err != nil {
+			return err
+		}
+
+		// polygon network config
+		networkConfigResp, err := c.GetNetworkConfig(ctx)
+		if err != nil {
+			return err
+		}
+		polygonConfig := networkConfigResp.Payload.NetworkConfig[POLYGON]
+
+		// contract setup
+		polygonAddr := common.HexToAddress(c.polygonConfig.DepositContract)
+		ctr, err := contract.NewDepositPolygon(polygonAddr, polygonClient)
+		if err != nil {
+			return err
+		}
+
+		c.polygonClient = polygonClient
+		c.polygonConfig = polygonConfig
+		c.polygonContract = ctr
+	}
+
+	return nil
+}
+
+func (c *Client) SetPolygonAllowance(ctx context.Context, rpcURL string, ethPrivateKey string, currency Currency, amount float64) error {
+	// one time setup
+	err := c.polygonInit(ctx, rpcURL)
+	if err != nil {
+		return err
+	}
+
+	
+
+	currentCoin := c.polygonConfig.Tokens[currency]
+	blockchainDecimal, err := strconv.Atoi(currentCoin.BlockchainDecimal)
+	if err != nil {
+		return err
+	}
+
+	// signer function
+	privateKey, err := crypto.HexToECDSA(ethPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	signerFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		chainID, err := c.ethClient.ChainID(context.Background())
+		if err != nil {
+			return nil, err
+		}
+
+		signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainID), privateKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return signedTx, nil
+	}
+
+	opt, err := getTransactionOpt(ctx, c.polygonClient, ethPrivateKey, signerFn, 0, blockchainDecimal)
+	if err != nil {
+		return err
+	}
+	opt.GasLimit = 100000
+
+	contractAddress := c.polygonConfig.DepositContract
+	polygonContractAddress := common.HexToAddress(contractAddress)
+
+	err = setAllowance(ctx, c.polygonClient, currentCoin.TokenContract, opt, polygonContractAddress, blockchainDecimal, amount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type PolygonContract interface {
 	DepositNative(opts *bind.TransactOpts) (*types.Transaction, error)
 	Deposit(opts *bind.TransactOpts, token common.Address, amount *big.Int) (*types.Transaction, error)
@@ -131,41 +212,21 @@ func (c *Client) DepositFromPolygonNetwork(
 	starkPublicKey string,
 	currency Currency,
 	amount float64,
-) (CryptoDepositResponse, AllowanceHelper, error) {
+) (CryptoDepositResponse, error) {
 	// check amount
 	if amount < 0 {
-		return CryptoDepositResponse{}, AllowanceHelper{}, ErrInvalidAmount
+		return CryptoDepositResponse{}, ErrInvalidAmount
 	}
 
 	// check if logged in or not
 	err := c.CheckAuth()
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
-	if c.polygonClient == nil {
-		polygonClient, err := ethclient.Dial(rpcURL)
-		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
-		}
-
-		// polygon network config
-		networkConfigResp, err := c.GetNetworkConfig(ctx)
-		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
-		}
-		polygonConfig := networkConfigResp.Payload.NetworkConfig[POLYGON]
-
-		// contract setup
-		polygonAddr := common.HexToAddress(c.polygonConfig.DepositContract)
-		ctr, err := contract.NewDepositPolygon(polygonAddr, polygonClient)
-		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
-		}
-
-		c.polygonClient = polygonClient
-		c.polygonConfig = polygonConfig
-		c.polygonContract = ctr
+	err = c.polygonInit(ctx, rpcURL)
+	if err != nil {
+		return CryptoDepositResponse{}, err
 	}
 
 	// network config already setup
@@ -174,31 +235,31 @@ func (c *Client) DepositFromPolygonNetwork(
 	contractAddress := c.polygonConfig.DepositContract
 
 	if !isPresent(allowedTokens, currency) {
-		return CryptoDepositResponse{}, AllowanceHelper{}, ErrCoinNotFound
+		return CryptoDepositResponse{}, ErrCoinNotFound
 	}
 
 	currentCoin := c.polygonConfig.Tokens[currency]
 	blockchainDecimal, err := strconv.Atoi(currentCoin.BlockchainDecimal)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	// contract already setup
 
 	balance, err := getTokenBalance(ctx, c.polygonClient, ethAddress, currency, currentCoin.BlockchainDecimal, currentCoin.TokenContract)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	if balance.Cmp(big.NewFloat(amount)) == -1 {
-		return CryptoDepositResponse{}, AllowanceHelper{}, fmt.Errorf("current balance of %v is less than deposit amount %v", balance, amount)
+		return CryptoDepositResponse{}, fmt.Errorf("current balance of %v is less than deposit amount %v", balance, amount)
 	}
 
 	var transaction *types.Transaction
 
 	privateKey, err := crypto.HexToECDSA(ethPrivateKey)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	signerFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
@@ -218,36 +279,29 @@ func (c *Client) DepositFromPolygonNetwork(
 	if currency == MATIC {
 		opt, err := getTransactionOpt(ctx, c.polygonClient, ethPrivateKey, signerFn, amount, blockchainDecimal)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 
 		transaction, err = c.polygonContract.DepositNative(opt)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 
 	} else {
 		opt, err := getTransactionOpt(ctx, c.polygonClient, ethPrivateKey, signerFn, 0, blockchainDecimal)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 		opt.GasLimit = 100000
 
 		polygonContractAddress := common.HexToAddress(contractAddress)
 		allowance, err := getAllowance(c.polygonClient, ethAddress, currentCoin.TokenContract, blockchainDecimal, polygonContractAddress)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 
 		if allowance < amount {
 			return CryptoDepositResponse{},
-				AllowanceHelper{
-					client:               c.polygonClient,
-					tokenContractAddress: currentCoin.TokenContract,
-					txOpts:               opt,
-					senderAddr:           polygonContractAddress,
-					blockchainDecimal:    blockchainDecimal,
-				},
 				&ErrInsufficientAllowance{
 					Allowance: allowance,
 					Amount:    amount,
@@ -258,7 +312,7 @@ func (c *Client) DepositFromPolygonNetwork(
 		address := common.HexToAddress(currentCoin.TokenContract)
 		transaction, err = c.polygonContract.Deposit(opt, address, quantizedAmount)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 	}
 
@@ -270,15 +324,13 @@ func (c *Client) DepositFromPolygonNetwork(
 		DepositBlockchainNonce: fmt.Sprintf("%v", transaction.Nonce()),
 	})
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	resp.Payload = transaction.Hash().Hex()
 
-	return resp, AllowanceHelper{}, nil
+	return resp, nil
 }
-
-
 
 type ListDepositsResponse struct {
 	Status  string `json:"status"`

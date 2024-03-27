@@ -139,7 +139,7 @@ func TestDepositFromPolygonNetwork(t *testing.T) {
 				defer cancel()
 			}
 
-			got, _, err := client.DepositFromPolygonNetwork(ctx, "", auth.From.String(), privateKeyString, "0x2", MATIC, tc.amount)
+			got, err := client.DepositFromPolygonNetwork(ctx, "", auth.From.String(), privateKeyString, "0x2", MATIC, tc.amount)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)

@@ -135,20 +135,3 @@ func  getAllowance(
 	return res, nil
 }
 
-
-type AllowanceHelper struct {
-	client               simulated.Client
-	tokenContractAddress string
-	txOpts               *bind.TransactOpts
-	senderAddr           common.Address
-	blockchainDecimal    int
-}
-
-func (a *AllowanceHelper) SetAllowance(ctx context.Context, amount float64) error {
-	err := setAllowance(ctx, a.client, a.tokenContractAddress, a.txOpts, a.senderAddr, a.blockchainDecimal, amount)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

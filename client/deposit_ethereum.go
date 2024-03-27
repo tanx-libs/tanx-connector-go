@@ -216,38 +216,18 @@ func (c *Client) cryptoDepositStart(ctx context.Context, depositReq CryptoDeposi
 	return cryptoDepositResponse, nil
 }
 
-func (c *Client) DepositFromEthereumNetwork(
-	ctx context.Context,
-	rpcURL string,
-	ethAddress string,
-	ethPrivateKey string,
-	starkPublicKey string,
-	amount float64,
-	currency Currency,
-) (CryptoDepositResponse, AllowanceHelper, error) {
-	// check amount
-	if amount < 0 {
-		return CryptoDepositResponse{}, AllowanceHelper{}, ErrInvalidAmount
-	}
-
-	// check if logged in or not
-	err := c.CheckAuth()
-	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
-	}
-
-	// one time setup
+func (c *Client) ethereumInit(ctx context.Context, rpcURL string) error {
 	if c.ethClient == nil {
 		// setting up client
 		ethClient, err := ethclient.Dial(rpcURL)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return err
 		}
 
 		// getting coin information here
 		coinStatus, err := c.getCoinStatus(ctx)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return err
 		}
 
 		// setting up starkex contract here
@@ -263,10 +243,10 @@ func (c *Client) DepositFromEthereumNetwork(
 			starkexContract, err = contract.NewDepositMainnet(starkaddr, ethClient)
 
 		default:
-			return CryptoDepositResponse{}, AllowanceHelper{}, ErrInvalidNetwork
+			return ErrInvalidNetwork
 		}
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return err
 		}
 
 		c.ethClient = ethClient
@@ -275,37 +255,128 @@ func (c *Client) DepositFromEthereumNetwork(
 		c.starkexContractAddress = starkaddr
 	}
 
+	return nil
+}
+
+func (c *Client) SetEthereumAllowance(ctx context.Context, rpcURL string, ethPrivateKey string, currency Currency, amount float64) error {
+	// one time setup
+	err := c.ethereumInit(ctx, rpcURL)
+	if err != nil {
+		return err
+	}
+
+	coinStatus, err := c.getCoinStatusPayload(currency)
+	if err != nil {
+		return err
+	}
+
+	blockchainDecimal, err := strconv.Atoi(coinStatus.BlockchainDecimal)
+	if err != nil {
+		return err
+	}
+
+	// decimal
+	decimal, err := strconv.Atoi(coinStatus.Decimal)
+	if err != nil {
+		return err
+	}
+
+	// signer function
+	privateKey, err := crypto.HexToECDSA(ethPrivateKey)
+	if err != nil {
+		return err
+	}
+
+	signerFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		chainID, err := c.ethClient.ChainID(context.Background())
+		if err != nil {
+			return nil, err
+		}
+
+		signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainID), privateKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return signedTx, nil
+	}
+
+	opt, err := getTransactionOpt(ctx, c.ethClient, ethPrivateKey, signerFn, 0, decimal)
+	if err != nil {
+		return err
+	}
+	opt.GasLimit = 100000
+
+	err = setAllowance(ctx, c.ethClient, coinStatus.TokenContract, opt, c.starkexContractAddress, blockchainDecimal, amount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type StarkexContract interface {
+	DepositEth(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int) (*types.Transaction, error)
+	DepositERC20(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int, quantizedAmount *big.Int) (*types.Transaction, error)
+}
+
+func (c *Client) DepositFromEthereumNetwork(
+	ctx context.Context,
+	rpcURL string,
+	ethAddress string,
+	ethPrivateKey string,
+	starkPublicKey string,
+	amount float64,
+	currency Currency,
+) (CryptoDepositResponse, error) {
+	// check amount
+	if amount < 0 {
+		return CryptoDepositResponse{}, ErrInvalidAmount
+	}
+
+	// check if logged in or not
+	err := c.CheckAuth()
+	if err != nil {
+		return CryptoDepositResponse{}, err
+	}
+
+	// one time setup
+	err = c.ethereumInit(ctx, rpcURL)
+	if err != nil {
+		return CryptoDepositResponse{}, err
+	}
+
 	// extracting specific currency information
 	coinStatus, err := c.getCoinStatusPayload(currency)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	// getting vault id here
 	vaultID, err := c.getVaultID(ctx, currency)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	// Getting balance information here
 	balance, err := getTokenBalance(ctx, c.ethClient, ethAddress, currency, coinStatus.BlockchainDecimal, coinStatus.TokenContract)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	if balance.Cmp(big.NewFloat(amount)) == -1 {
-		return CryptoDepositResponse{}, AllowanceHelper{}, fmt.Errorf("current balance of %v is less than deposit amount %v", balance, amount)
+		return CryptoDepositResponse{}, fmt.Errorf("current balance of %v is less than deposit amount %v", balance, amount)
 	}
 
 	var transaction *types.Transaction
 	starkPublicKeyBigInt, ok := new(big.Int).SetString(starkPublicKey[2:], 16)
 	if !ok {
-		return CryptoDepositResponse{}, AllowanceHelper{}, fmt.Errorf("failed to convert starkPublicKey to big.Int")
+		return CryptoDepositResponse{}, fmt.Errorf("failed to convert starkPublicKey to big.Int")
 	}
 
 	starkAssetIDBigInt, ok := new(big.Int).SetString(coinStatus.StarkAssetID[2:], 16)
 	if !ok {
-		return CryptoDepositResponse{}, AllowanceHelper{}, fmt.Errorf("failed to convert StarkAssetID to big.Int")
+		return CryptoDepositResponse{}, fmt.Errorf("failed to convert StarkAssetID to big.Int")
 	}
 
 	vaultIDBigInt := big.NewInt(int64(vaultID))
@@ -313,26 +384,26 @@ func (c *Client) DepositFromEthereumNetwork(
 	// decimal
 	decimal, err := strconv.Atoi(coinStatus.Decimal)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	// blockchain decimal
 	blockchainDecimal, err := strconv.Atoi(coinStatus.BlockchainDecimal)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	// quantization
 	quantization, err := strconv.Atoi(coinStatus.Quanitization)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 	quantizedAmount := ToWei(amount, quantization)
 
 	// signer function
 	privateKey, err := crypto.HexToECDSA(ethPrivateKey)
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	signerFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
@@ -352,35 +423,28 @@ func (c *Client) DepositFromEthereumNetwork(
 	if currency == ETH {
 		opt, err := getTransactionOpt(ctx, c.ethClient, ethPrivateKey, signerFn, amount, blockchainDecimal)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 
 		transaction, err = c.starkexContract.DepositEth(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 
 	} else {
 		opt, err := getTransactionOpt(ctx, c.ethClient, ethPrivateKey, signerFn, 0, decimal)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 		opt.GasLimit = 100000
 
 		allowance, err := getAllowance(c.ethClient, ethAddress, coinStatus.TokenContract, blockchainDecimal, c.starkexContractAddress)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 
 		if allowance < amount {
 			return CryptoDepositResponse{},
-				AllowanceHelper{
-					client:               c.ethClient,
-					tokenContractAddress: coinStatus.TokenContract,
-					txOpts:               opt,
-					senderAddr:           c.starkexContractAddress,
-					blockchainDecimal:    blockchainDecimal,
-				},
 				&ErrInsufficientAllowance{
 					Allowance: allowance,
 					Amount:    amount,
@@ -389,7 +453,7 @@ func (c *Client) DepositFromEthereumNetwork(
 
 		transaction, err = c.starkexContract.DepositERC20(opt, starkPublicKeyBigInt, starkAssetIDBigInt, vaultIDBigInt, quantizedAmount)
 		if err != nil {
-			return CryptoDepositResponse{}, AllowanceHelper{}, err
+			return CryptoDepositResponse{}, err
 		}
 	}
 
@@ -409,14 +473,9 @@ func (c *Client) DepositFromEthereumNetwork(
 		VaultID:                vaultID,
 	})
 	if err != nil {
-		return CryptoDepositResponse{}, AllowanceHelper{}, err
+		return CryptoDepositResponse{}, err
 	}
 
 	resp.Payload = transaction.Hash().Hex()
-	return resp, AllowanceHelper{}, nil
-}
-
-type StarkexContract interface {
-	DepositEth(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int) (*types.Transaction, error)
-	DepositERC20(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int, quantizedAmount *big.Int) (*types.Transaction, error)
+	return resp, nil
 }
