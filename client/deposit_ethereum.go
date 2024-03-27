@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -372,7 +371,6 @@ func (c *Client) DepositFromEthereumNetwork(
 		if err != nil {
 			return CryptoDepositResponse{}, AllowanceHelper{}, err
 		}
-		log.Println(allowance, amount)
 
 		if allowance < amount {
 			return CryptoDepositResponse{},
@@ -422,80 +420,3 @@ type StarkexContract interface {
 	DepositEth(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int) (*types.Transaction, error)
 	DepositERC20(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int, quantizedAmount *big.Int) (*types.Transaction, error)
 }
-
-// Note: This function has to be called before using any other deposit function
-// func (c *Client) DepositFromEthereumNetworkInit(ctx context.Context, rpcURL string) error {
-// 	ethClient, err := ethclient.Dial(rpcURL)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	c.ethClient = ethClient
-
-// 	// getting coin information here
-// 	coinStatus, err := c.getCoinStatus(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	c.coinStatus = coinStatus
-
-// 	// setting up starkex contract here
-// 	var starkaddr common.Address
-// 	var starkexContract StarkexContract
-// 	switch c.network {
-// 	case TESTNET:
-// 		starkaddr = common.HexToAddress(TESTNET_STARK_CONTRACT)
-// 		starkexContract, err = contract.NewDepositTestnet(starkaddr, c.ethClient)
-
-// 	case MAINNET:
-// 		starkaddr = common.HexToAddress(MAINET_STARK_CONTRACT)
-// 		starkexContract, err = contract.NewDepositMainnet(starkaddr, c.ethClient)
-
-// 	default:
-// 		return ErrInvalidNetwork
-// 	}
-// 	if err != nil {
-// 		return err
-// 	}
-// 	c.starkexContract = starkexContract
-// 	c.starkexContractAddress = starkaddr
-
-// 	return nil
-// }
-
-// // old allowance code
-// setAllowance := func(amount int) error {
-// 	tokenContractAddr := common.HexToAddress(coinStatus.TokenContract)
-
-// 	erc20Contract, err := contract.NewErc20(tokenContractAddr, c.ethClient)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	opt, err := getTransactionOpt(ctx, c.ethClient, ethPrivateKey, signerFn, 0, decimal)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	opt.GasLimit, err = c.ethClient.EstimateGas(ctx, ethereum.CallMsg{
-// 		From: tokenContractAddr,
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	amountInWei := ToWei(float64(amount), blockchainDecimal)
-
-// 	_, err = erc20Contract.Approve(opt, starkaddr, amountInWei)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	log.Println("gas price: ", opt.GasPrice)
-// 	log.Println("gas limit: ", opt.GasLimit)
-
-// 	return nil
-// }
-
-// err = setAllowance(100)
-// if err != nil {
-// 	return CryptoDepositResponse{}, err
-// }
