@@ -132,7 +132,7 @@ func (c *Client) polygonInit(ctx context.Context, rpcURL string) error {
 		}
 		polygonConfig := networkConfigResp.Payload.NetworkConfig[POLYGON]
 		c.polygonConfig = polygonConfig
-		
+
 		// contract setup
 		polygonAddr := common.HexToAddress(c.polygonConfig.DepositContract)
 		ctr, err := contract.NewDepositPolygon(polygonAddr, polygonClient)
@@ -141,7 +141,7 @@ func (c *Client) polygonInit(ctx context.Context, rpcURL string) error {
 		}
 
 		c.polygonClient = polygonClient
-		
+
 		c.polygonContract = ctr
 	}
 
@@ -185,7 +185,6 @@ func (c *Client) SetPolygonAllowance(ctx context.Context, rpcURL string, ethPriv
 	if err != nil {
 		return err
 	}
-	opt.GasLimit = 100000
 
 	contractAddress := c.polygonConfig.DepositContract
 	polygonContractAddress := common.HexToAddress(contractAddress)
@@ -291,7 +290,6 @@ func (c *Client) DepositFromPolygonNetwork(
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
-		opt.GasLimit = 100000
 
 		polygonContractAddress := common.HexToAddress(contractAddress)
 		allowance, err := getAllowance(c.polygonClient, ethAddress, currentCoin.TokenContract, blockchainDecimal, polygonContractAddress)

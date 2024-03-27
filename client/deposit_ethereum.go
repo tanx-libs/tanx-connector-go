@@ -305,7 +305,6 @@ func (c *Client) SetEthereumAllowance(ctx context.Context, rpcURL string, ethPri
 	if err != nil {
 		return err
 	}
-	opt.GasLimit = 100000
 
 	err = setAllowance(ctx, c.ethClient, coinStatus.TokenContract, opt, c.starkexContractAddress, blockchainDecimal, amount)
 	if err != nil {
@@ -436,7 +435,6 @@ func (c *Client) DepositFromEthereumNetwork(
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
-		// opt.GasLimit = 100000
 
 		allowance, err := getAllowance(c.ethClient, ethAddress, coinStatus.TokenContract, blockchainDecimal, c.starkexContractAddress)
 		if err != nil {
