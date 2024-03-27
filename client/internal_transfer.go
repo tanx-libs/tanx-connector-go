@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/tanx-libs/tanx-connector-go/crypto-cpp/build/Release/src/starkware/crypto/ffi/crypto_lib"
+	"github.com/tanx-libs/tanx-connector-go/crypto_cpp"
 )
 
-// create internal transfer
-// todo currency ka issue hain
+
 type InternalTransferInitiateRequest struct {
 	OrganizationKey    string  `json:"organization_key"`    // required
 	ApiKey             string  `json:"api_key"`             // required
@@ -140,7 +139,7 @@ func (c *Client) InternalTransferCreate(ctx context.Context, starkPrivateKey str
 
 	msgHash := internalTransferInitiateResponse.Payload.MsgHash
 
-	r, s := crypto_lib.Sign(starkPrivateKey, msgHash, "0x1")
+	r, s := crypto_cpp.Sign(starkPrivateKey, msgHash, "0x1")
 
 	internalTransferProcessRequest := InternalTransferProcessRequest{
 		OrganizationKey: opt.OrganizationKey,
