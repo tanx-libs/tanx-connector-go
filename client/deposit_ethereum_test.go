@@ -184,7 +184,7 @@ func TestDepositFromEthereumNetwork(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.DepositFromEthereumNetwork(ctx, auth.From.String(), privateKeyString, "0x2", tc.amount, ETH)
+			got, _, err := client.DepositFromEthereumNetwork(ctx, "", auth.From.String(), privateKeyString, "0x2", tc.amount, ETH)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)

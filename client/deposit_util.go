@@ -87,7 +87,7 @@ func getTokenBalance(ctx context.Context, client simulated.Client, ethAddress st
 	return ToDecimal(balance, d), nil
 }
 
-func setAllowance(ctx context.Context, client simulated.Client, tokenContractAddress string, txOpts *bind.TransactOpts, senderAddr common.Address, blockchainDecimal int, allowance int) error {
+func setAllowance(ctx context.Context, client simulated.Client, tokenContractAddress string, txOpts *bind.TransactOpts, senderAddr common.Address, blockchainDecimal int, allowance float64) error {
 	tokenContractAddr := common.HexToAddress(tokenContractAddress)
 
 	erc20Contract, err := contract.NewErc20(tokenContractAddr, client)
@@ -102,7 +102,7 @@ func setAllowance(ctx context.Context, client simulated.Client, tokenContractAdd
 		return err
 	}
 
-	amountInWei := ToWei(float64(allowance), blockchainDecimal)
+	amountInWei := ToWei(allowance, blockchainDecimal)
 
 	_, err = erc20Contract.Approve(txOpts, senderAddr, amountInWei)
 	if err != nil {
@@ -133,4 +133,22 @@ func  getAllowance(
 	res, _ := ToDecimal(allowance, decimal).Float64()
 
 	return res, nil
+}
+
+
+type AllowanceHelper struct {
+	client               simulated.Client
+	tokenContractAddress string
+	txOpts               *bind.TransactOpts
+	senderAddr           common.Address
+	blockchainDecimal    int
+}
+
+func (a *AllowanceHelper) SetAllowance(ctx context.Context, amount float64) error {
+	err := setAllowance(ctx, a.client, a.tokenContractAddress, a.txOpts, a.senderAddr, a.blockchainDecimal, amount)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

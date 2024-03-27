@@ -36,7 +36,7 @@ func TestDepositFromPolygonNetwork(t *testing.T) {
 		auth.From: {Balance: balanceInWei},
 	}, simulated.WithBlockGasLimit(1000000))
 
-	// ethclient
+	// polygonClient
 	polygonClient := simBack.Client()
 
 	client, err := New(TESTNET)
@@ -46,8 +46,8 @@ func TestDepositFromPolygonNetwork(t *testing.T) {
 	client.refreshToken = "refresh"
 	client.polygonClient = polygonClient
 
-	t.Run("testing ethereum balance", func(t *testing.T) {
-		maticBalance, err := getTokenBalance(context.TODO(), client.polygonClient, auth.From.String(), ETH, "18", "")
+	t.Run("testing matic balance", func(t *testing.T) {
+		maticBalance, err := getTokenBalance(context.TODO(), client.polygonClient, auth.From.String(), MATIC, "18", "")
 		assert.NoError(t, err)
 		assert.Equal(t, balance, maticBalance.String())
 	})
@@ -107,8 +107,8 @@ func TestDepositFromPolygonNetwork(t *testing.T) {
 				}, nil
 			}),
 			polygonConfig: NetworkConfigData{
-				DepositContract: "0x1",
-				Tokens: map[Currency]CoinToken{},
+				DepositContract:                 "0x1",
+				Tokens:                          map[Currency]CoinToken{},
 				AllowedTokensForDeposit:         []Currency{MATIC},
 				AllowedTokensForDepositFrontend: []Currency{MATIC},
 				AllowedTokensForFastWd:          []Currency{MATIC},
@@ -139,7 +139,7 @@ func TestDepositFromPolygonNetwork(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.DepositFromPolygonNetwork(ctx, auth.From.String(), privateKeyString, "0x2", MATIC, tc.amount)
+			got, _, err := client.DepositFromPolygonNetwork(ctx, "", auth.From.String(), privateKeyString, "0x2", MATIC, tc.amount)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)

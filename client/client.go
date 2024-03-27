@@ -104,19 +104,20 @@ const (
 )
 
 type Client struct {
-	ethClient                   simulated.Client
-	network                     BaseURL
-	coinStatus                  CoinStatusResponse
-	starkexContract             StarkexContract
-	starkexContractAddress      common.Address
-	ethereumNetworkAllowance    int
-	ethereumNetworkAllowanceSet bool
+	network BaseURL
+	
+	ethClient              simulated.Client
+	coinStatus             CoinStatusResponse
+	starkexContract        StarkexContract
+	starkexContractAddress common.Address
+	// ethereumNetworkAllowance    int
+	// ethereumNetworkAllowanceSet bool
 
-	polygonClient              simulated.Client
-	polygonConfig              NetworkConfigData
-	polygonContract            PolygonContract
-	polygonNetworkAllowance    int
-	polygonNetworkAllowanceSet bool
+	polygonClient   simulated.Client
+	polygonConfig   NetworkConfigData
+	polygonContract PolygonContract
+	// polygonNetworkAllowance    int
+	// polygonNetworkAllowanceSet bool
 
 	httpClient   *http.Client
 	jwtToken     string
@@ -218,12 +219,12 @@ func New(base BaseURL) (*Client, error) {
 	listFastWithdrawal := baseurl.JoinPath(LIST_FAST_WITHDRAWALS_ENDPOINT)
 
 	return &Client{
-		network:                     base,
-		ethereumNetworkAllowance:    100, // default allowance
-		ethereumNetworkAllowanceSet: false,
+		network: base,
+		// ethereumNetworkAllowance:    100, // default allowance
+		// ethereumNetworkAllowanceSet: false,
 
-		polygonNetworkAllowance:    100, // default allowance
-		polygonNetworkAllowanceSet: false,
+		// polygonNetworkAllowance:    100, // default allowance
+		// polygonNetworkAllowanceSet: false,
 
 		httpClient:   http.DefaultClient,
 		jwtToken:     "",
