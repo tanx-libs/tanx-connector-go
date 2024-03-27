@@ -16,13 +16,18 @@ type ProfilePayload struct {
 }
 
 type ProfileResponse struct {
-	Status  string         `json:"status"`
+	Status  Status         `json:"status"`
 	Message string         `json:"message"`
 	Payload ProfilePayload `json:"payload"`
 }
 
 // Retrieve details of a user’s portfolio
 func (c *Client) Profile(ctx context.Context) (ProfileResponse, error) {
+	err := c.CheckAuth()
+	if err != nil {
+		return ProfileResponse{}, err
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.profileURL.String(), nil)
 	if err != nil {
 		return ProfileResponse{}, err
@@ -38,12 +43,28 @@ func (c *Client) Profile(ctx context.Context) (ProfileResponse, error) {
 
 	var profileResponse ProfileResponse
 	err = json.NewDecoder(resp.Body).Decode(&profileResponse)
-	if err != nil {
-		return ProfileResponse{}, err
+	
+	if profileResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return ProfileResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(profileResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return ProfileResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(profileResponse.Message),
+			}
+		}
+
+		return ProfileResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, profileResponse.Message)
+	
+	} else if err != nil {
+		return ProfileResponse{}, &ErrJSONDecoding{Err: err}
 	}
+	
+	
 
 	return profileResponse, nil
 }
-
-
-

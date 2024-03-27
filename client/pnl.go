@@ -53,12 +53,17 @@ type PNLPayload struct {
 }
 
 type PNLResponse struct {
-	Status  string       `json:"status"`
+	Status  Status       `json:"status"`
 	Message string       `json:"message"`
 	Payload []PNLPayload `json:"payload"`
 }
 
 func (c *Client) PNL(ctx context.Context) (PNLResponse, error) {
+	err := c.CheckAuth()
+	if err != nil {
+		return PNLResponse{}, err
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.pnlURL.String(), nil)
 	if err != nil {
 		return PNLResponse{}, err
@@ -74,9 +79,28 @@ func (c *Client) PNL(ctx context.Context) (PNLResponse, error) {
 
 	var pnlResponse PNLResponse
 	err = json.NewDecoder(resp.Body).Decode(&pnlResponse)
-	if err != nil {
-		return PNLResponse{}, err
+	
+	if pnlResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return PNLResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(pnlResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return PNLResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(pnlResponse.Message),
+			}
+		}
+
+		return PNLResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, pnlResponse.Message)
+	
+	} else if err != nil {
+		return PNLResponse{}, &ErrJSONDecoding{Err: err}
 	}
+	
+
 
 	return pnlResponse, nil
 }

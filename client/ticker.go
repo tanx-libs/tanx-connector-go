@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -25,13 +26,13 @@ type TickerPayload struct {
 }
 
 type TickerResponse struct {
-	Status  string        `json:"status"`
+	Status  Status        `json:"status"`
 	Message string        `json:"message"`
 	Payload TickerPayload `json:"payload"`
 }
 
 type AllTickerResponse struct {
-	Status  string                   `json:"status"`
+	Status  Status                   `json:"status"`
 	Message string                   `json:"message"`
 	Payload map[string]TickerPayload `json:"payload"`
 }
@@ -63,8 +64,23 @@ func (c *Client) Ticker(ctx context.Context, market string) (TickerResponse, err
 
 	var tickerResponse TickerResponse
 	err = json.NewDecoder(resp.Body).Decode(&tickerResponse)
-	if err != nil {
-		return TickerResponse{}, err
+	if tickerResponse.Status == ERROR {
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return TickerResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(tickerResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return TickerResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(tickerResponse.Message),
+			}
+		}
+
+		return TickerResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, tickerResponse.Message)
+
+	} else if err != nil {
+		return TickerResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
 	return tickerResponse, nil
@@ -85,8 +101,23 @@ func (c *Client) AllTickers(ctx context.Context) (AllTickerResponse, error) {
 
 	var allTickerResponse AllTickerResponse
 	err = json.NewDecoder(resp.Body).Decode(&allTickerResponse)
-	if err != nil {
-		return AllTickerResponse{}, err
+	if allTickerResponse.Status == ERROR {
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return AllTickerResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(allTickerResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return AllTickerResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(allTickerResponse.Message),
+			}
+		}
+
+		return AllTickerResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, allTickerResponse.Message)
+
+	} else if err != nil {
+		return AllTickerResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
 	return allTickerResponse, nil
