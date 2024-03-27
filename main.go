@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/tanx-libs/tanx-connector-go/client"
 )
@@ -31,22 +30,17 @@ func main() {
 		panic(err)
 	}
 
-	// ethereum desposits
-	hash, allowanceHelper, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, 100, client.USDC)
-	if err != nil {
-		switch err {
-		case err.(*client.ErrInsufficientAllowance):
-			allowanceErr := allowanceHelper.SetAllowance(context.TODO(), 101)
-			if allowanceErr != nil {
-				log.Fatalln(allowanceErr)
-			}
+	// err = c.SetEthereumAllowance(context.TODO(), rpcURL, ethPrivateKey, client.USDC, 1)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-		default:
-			log.Println(err)
-		}
-	} else {
-		fmt.Printf("%+v", hash)
+	// // ethereum desposits
+	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, 0.1, client.USDC)
+	if err != nil {
+		panic(err)
 	}
+	fmt.Printf("%+v", hash)
 
 	// // polygon deposits
 	// rpcURL2 := "https://polygon-mumbai-bor-rpc.publicnode.com"

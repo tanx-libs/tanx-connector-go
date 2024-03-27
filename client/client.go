@@ -110,14 +110,10 @@ type Client struct {
 	coinStatus             CoinStatusResponse
 	starkexContract        StarkexContract
 	starkexContractAddress common.Address
-	// ethereumNetworkAllowance    int
-	// ethereumNetworkAllowanceSet bool
 
 	polygonClient   simulated.Client
 	polygonConfig   NetworkConfigData
 	polygonContract PolygonContract
-	// polygonNetworkAllowance    int
-	// polygonNetworkAllowanceSet bool
 
 	httpClient   *http.Client
 	jwtToken     string
@@ -220,11 +216,6 @@ func New(base BaseURL) (*Client, error) {
 
 	return &Client{
 		network: base,
-		// ethereumNetworkAllowance:    100, // default allowance
-		// ethereumNetworkAllowanceSet: false,
-
-		// polygonNetworkAllowance:    100, // default allowance
-		// polygonNetworkAllowanceSet: false,
 
 		httpClient:   http.DefaultClient,
 		jwtToken:     "",
