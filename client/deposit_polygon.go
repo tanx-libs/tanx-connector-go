@@ -131,7 +131,8 @@ func (c *Client) polygonInit(ctx context.Context, rpcURL string) error {
 			return err
 		}
 		polygonConfig := networkConfigResp.Payload.NetworkConfig[POLYGON]
-
+		c.polygonConfig = polygonConfig
+		
 		// contract setup
 		polygonAddr := common.HexToAddress(c.polygonConfig.DepositContract)
 		ctr, err := contract.NewDepositPolygon(polygonAddr, polygonClient)
@@ -140,7 +141,7 @@ func (c *Client) polygonInit(ctx context.Context, rpcURL string) error {
 		}
 
 		c.polygonClient = polygonClient
-		c.polygonConfig = polygonConfig
+		
 		c.polygonContract = ctr
 	}
 
