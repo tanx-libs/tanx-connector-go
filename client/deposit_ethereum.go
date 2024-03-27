@@ -436,7 +436,7 @@ func (c *Client) DepositFromEthereumNetwork(
 		if err != nil {
 			return CryptoDepositResponse{}, err
 		}
-		opt.GasLimit = 100000
+		// opt.GasLimit = 100000
 
 		allowance, err := getAllowance(c.ethClient, ethAddress, coinStatus.TokenContract, blockchainDecimal, c.starkexContractAddress)
 		if err != nil {

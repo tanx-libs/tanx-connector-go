@@ -155,8 +155,6 @@ func (c *Client) SetPolygonAllowance(ctx context.Context, rpcURL string, ethPriv
 		return err
 	}
 
-	
-
 	currentCoin := c.polygonConfig.Tokens[currency]
 	blockchainDecimal, err := strconv.Atoi(currentCoin.BlockchainDecimal)
 	if err != nil {
@@ -170,7 +168,7 @@ func (c *Client) SetPolygonAllowance(ctx context.Context, rpcURL string, ethPriv
 	}
 
 	signerFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
-		chainID, err := c.ethClient.ChainID(context.Background())
+		chainID, err := c.polygonClient.ChainID(context.Background())
 		if err != nil {
 			return nil, err
 		}
