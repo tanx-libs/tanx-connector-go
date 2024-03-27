@@ -24,7 +24,7 @@ func main() {
 	starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
 	// // starkPrivateKey := "0x7302fa58776da9f8fcf3631f4cb495a4dd0cdfab785e8b72a8a637d4bb14784"
 
-	// rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
+	rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
 	_, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
 	if err != nil {
 		panic(err)
@@ -36,21 +36,21 @@ func main() {
 	// }
 
 	// // ethereum desposits
-	// hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, 0.1, client.USDC)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Printf("%+v", hash)
-
-	// // polygon deposits
-	rpcURL2 := "https://polygon-mumbai-bor-rpc.publicnode.com"
-
-
-	hash, err := c.DepositFromPolygonNetwork(context.TODO(), rpcURL2, ethAddr, ethPrivateKey, starkPublicKey, client.MATIC, 0.01)
+	hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, 0.1, client.USDC)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%+v", hash)
+
+	// // polygon deposits
+	// rpcURL2 := "https://polygon-mumbai-bor-rpc.publicnode.com"
+
+
+	// hash, err := c.DepositFromPolygonNetwork(context.TODO(), rpcURL2, ethAddr, ethPrivateKey, starkPublicKey, client.MATIC, 0.01)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("%+v", hash)
 
 	// rpcURL2 := "https://polygon-mumbai-bor-rpc.publicnode.com"
 	// hash, err := c.DepositFromPolygonNetwork(context.TODO(), rpcURL2, ethAddr, ethPrivateKey, starkPublicKey, client.BTC, 0.001)
