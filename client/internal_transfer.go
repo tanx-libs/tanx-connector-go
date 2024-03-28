@@ -5,28 +5,30 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/tanx-libs/tanx-connector-go/crypto_cpp"
 )
 
-
 type InternalTransferInitiateRequest struct {
-	OrganizationKey    string  `json:"organization_key"`    // required
-	ApiKey             string  `json:"api_key"`             // required
-	ClientReferenceId  string  `json:"client_reference_id"` // optional
-	Currency           string  `json:"currency"`            // required
-	Amount             float64 `json:"amount"`              // required
-	DestinationAddress string  `json:"destination_address"` // required
+	OrganizationKey    string   `json:"organization_key"`    // required
+	ApiKey             string   `json:"api_key"`             // required
+	ClientReferenceId  string   `json:"client_reference_id"` // optional
+	Currency           Currency `json:"currency"`            // required
+	Amount             float64  `json:"amount"`              // required
+	DestinationAddress string   `json:"destination_address"` // required
+}
+
+type InternalTransferInitiatePayload struct {
+	MsgHash string `json:"msg_hash"`
+	Nonce   int    `json:"nonce"`
 }
 
 type InternalTransferInitiateResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
-	Payload struct {
-		MsgHash string `json:"msg_hash"`
-		Nonce   int    `json:"nonce"`
-	} `json:"payload"`
+	Status  Status                          `json:"status"`
+	Message string                          `json:"message"`
+	Payload InternalTransferInitiatePayload `json:"payload"`
 }
 
 func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTransferInitiateRequest) (InternalTransferInitiateResponse, error) {
@@ -40,6 +42,7 @@ func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTrans
 		return InternalTransferInitiateResponse{}, err
 	}
 
+	log.Println(c.internalTransferInitiateURL.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.internalTransferInitiateURL.String(), bytes.NewReader(reqBody))
 	if err != nil {
 		return InternalTransferInitiateResponse{}, err
@@ -56,8 +59,26 @@ func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTrans
 
 	var internalTransferInitiateResponse InternalTransferInitiateResponse
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferInitiateResponse)
-	if err != nil {
-		return InternalTransferInitiateResponse{}, fmt.Errorf("error: %s", internalTransferInitiateResponse.Message)
+	log.Println(1)
+
+	if internalTransferInitiateResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return InternalTransferInitiateResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferInitiateResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return InternalTransferInitiateResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferInitiateResponse.Message),
+			}
+		}
+
+		return InternalTransferInitiateResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, internalTransferInitiateResponse.Message)
+
+	} else if err != nil {
+		return InternalTransferInitiateResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
 	return internalTransferInitiateResponse, nil
@@ -78,7 +99,7 @@ type InternalTransferProcessRequest struct {
 }
 
 type InternalTransferProcessResponse struct {
-	Status  string `json:"status"`
+	Status  Status `json:"status"`
 	Message string `json:"message"`
 	Payload struct {
 		ClientReferenceId  string `json:"client_reference_id"`
@@ -119,8 +140,24 @@ func (c *Client) InternalTransferProcess(ctx context.Context, opt InternalTransf
 
 	var internalTransferProcessResponse InternalTransferProcessResponse
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferProcessResponse)
-	if err != nil {
-		return InternalTransferProcessResponse{}, fmt.Errorf("error: %s", internalTransferProcessResponse.Message)
+	if internalTransferProcessResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return InternalTransferProcessResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferProcessResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return InternalTransferProcessResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferProcessResponse.Message),
+			}
+		}
+
+		return InternalTransferProcessResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, internalTransferProcessResponse.Message)
+
+	} else if err != nil {
+		return InternalTransferProcessResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
 	return internalTransferProcessResponse, nil
@@ -162,7 +199,7 @@ func (c *Client) InternalTransferCreate(ctx context.Context, starkPrivateKey str
 
 // internal transfer get
 type InternalTransferGetResponse struct {
-	Status  string `json:"status"`
+	Status  Status `json:"status"`
 	Message string `json:"message"`
 	Payload struct {
 		ClientReferenceId  string `json:"client_reference_id"`
@@ -200,16 +237,33 @@ func (c *Client) InternalTransferGet(ctx context.Context, clientReferenceId stri
 
 	var internalTransferGetResponse InternalTransferGetResponse
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferGetResponse)
-	if err != nil {
-		return InternalTransferGetResponse{}, fmt.Errorf("error: %s", internalTransferGetResponse.Message)
+
+	if internalTransferGetResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return InternalTransferGetResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferGetResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return InternalTransferGetResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferGetResponse.Message),
+			}
+		}
+
+		return InternalTransferGetResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, internalTransferGetResponse.Message)
+
+	} else if err != nil {
+		return InternalTransferGetResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
-	return InternalTransferGetResponse{}, nil
+	return internalTransferGetResponse, nil
 }
 
 // internal transfer user
 type InternalTransferUserResponse struct {
-	Status  string `json:"status"`
+	Status  Status `json:"status"`
 	Message string `json:"message"`
 	Payload struct {
 		DestinationAddress string `json:"destination_address"`
@@ -250,8 +304,24 @@ func (c *Client) InternalTransferUser(ctx context.Context, opt InternalTransferU
 
 	var internalTransferUserResponse InternalTransferUserResponse
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferUserResponse)
-	if err != nil {
-		return InternalTransferUserResponse{}, fmt.Errorf("error: %s", internalTransferUserResponse.Message)
+	if internalTransferUserResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return InternalTransferUserResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferUserResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return InternalTransferUserResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferUserResponse.Message),
+			}
+		}
+
+		return InternalTransferUserResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, internalTransferUserResponse.Message)
+
+	} else if err != nil {
+		return InternalTransferUserResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
 	return internalTransferUserResponse, nil
@@ -259,7 +329,7 @@ func (c *Client) InternalTransferUser(ctx context.Context, opt InternalTransferU
 
 // internal transfer list
 type InternalTransferListResponse struct {
-	Status  string `json:"status"`
+	Status  Status `json:"status"`
 	Message string `json:"message"`
 	Payload struct {
 		InternalTransfers []struct {
@@ -307,8 +377,25 @@ func (c *Client) InternalTransferList(ctx context.Context, opt InternalTransferL
 
 	var internalTransferListResponse InternalTransferListResponse
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferListResponse)
-	if err != nil {
-		return InternalTransferListResponse{}, fmt.Errorf("error: %s", internalTransferListResponse.Message)
+
+	if internalTransferListResponse.Status == ERROR {
+		// handling 4xx and 5xx errors
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return InternalTransferListResponse{}, &ErrClient{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferListResponse.Message),
+			}
+		} else if resp.StatusCode >= 500 {
+			return InternalTransferListResponse{}, &ErrServer{
+				Status: resp.StatusCode,
+				Err:    fmt.Errorf(internalTransferListResponse.Message),
+			}
+		}
+
+		return InternalTransferListResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, internalTransferListResponse.Message)
+
+	} else if err != nil {
+		return InternalTransferListResponse{}, &ErrJSONDecoding{Err: err}
 	}
 
 	return internalTransferListResponse, nil
