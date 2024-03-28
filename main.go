@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"github.com/tanx-libs/tanx-connector-go/client"
 )
@@ -23,16 +24,32 @@ func main() {
 	// starkPublicKey := "0x64211ed550cb37140ef2268cf7b2625aef725d33618c9651765e16318101c17"
 	// // starkPrivateKey := "0x7302fa58776da9f8fcf3631f4cb495a4dd0cdfab785e8b72a8a637d4bb14784"
 
-	rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
+	// rpcURL := "https://sepolia.infura.io/v3/bc9fafffa1f447bab403ee4a8b5090f4"
 	_, err = c.Login(context.TODO(), ethAddr, ethPrivateKey)
 	if err != nil {
 		panic(err)
 	}
 
-	err = c.SetPolygonAllowance(context.TODO(), rpcURL, ethPrivateKey, client.BTC, 1)
+	ethAddr2 := "0x4143112f2c877A26BD30cfEE8829202A65392845"
+	starkPrivateKey := "0x7302fa58776da9f8fcf3631f4cb495a4dd0cdfab785e8b72a8a637d4bb14784"
+	opt := client.InternalTransferInitiateRequest{
+		OrganizationKey:    `+b^GSDqS#X79rE@_cNG!gk43HHz3V!-hhu+KFu*%b-ym6X#V^L?_jSCVtAy-yCec`,
+		ApiKey:             "BRINE_SALT",
+		ClientReferenceId:  "18",
+		Currency:           client.USDC,
+		Amount:             10,
+		DestinationAddress: ethAddr2,
+	}
+	r, err := c.InternalTransferCreate(context.TODO(), starkPrivateKey, opt)
 	if err != nil {
 		panic(err)
 	}
+	log.Println(r)
+
+	// err = c.SetPolygonAllowance(context.TODO(), rpcURL, ethPrivateKey, client.BTC, 1)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// // // // ethereum desposits
 	// hash, err := c.DepositFromEthereumNetwork(context.TODO(), rpcURL, ethAddr, ethPrivateKey, starkPublicKey, 0.1, client.USDC)
