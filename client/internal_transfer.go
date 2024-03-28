@@ -42,7 +42,6 @@ func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTrans
 		return InternalTransferInitiateResponse{}, err
 	}
 
-	log.Println(c.internalTransferInitiateURL.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.internalTransferInitiateURL.String(), bytes.NewReader(reqBody))
 	if err != nil {
 		return InternalTransferInitiateResponse{}, err
@@ -59,7 +58,6 @@ func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTrans
 
 	var internalTransferInitiateResponse InternalTransferInitiateResponse
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferInitiateResponse)
-	log.Println(1)
 
 	if internalTransferInitiateResponse.Status == ERROR {
 		// handling 4xx and 5xx errors
