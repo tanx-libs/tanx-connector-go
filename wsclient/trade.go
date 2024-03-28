@@ -1,3 +1,5 @@
+// TODO add msg for extra debugging
+
 package wsclient
 
 import (
@@ -23,14 +25,14 @@ type TradeEventHandler func(event *TradeEvent)
 
 // SubUnsubTradeTopics returns a SubUnsubRequest to subscribe or unsubscribe to Trade data
 func SubUnsubTradeTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest {
-	topics := make([]string, len(symbol))
+	streams := make([]string, len(symbol))
 	for i, s := range symbol {
-		topics[i] = fmt.Sprintf("%s.trades", s)
+		streams[i] = fmt.Sprintf("%s.trades", s)
 	}
 
 	return SubUnsubRequest{
 		Event:   subUnsub,
-		Streams: topics,
+		Streams: streams,
 	}
 }
 
@@ -65,8 +67,7 @@ func (c *Wsclient) Trade(symbol []string, tradeEventHandler TradeEventHandler, s
 
 		case msg[SUB_UNSUB_ERROR] != nil:
 			errHandler(&ErrSubUnsub{
-				Msg: msg[SUB_UNSUB_ERROR].(string),
-				Err: fmt.Errorf(""),
+				Err: fmt.Errorf(msg[SUB_UNSUB_ERROR].(string)),
 			})
 
 		default:
@@ -84,4 +85,3 @@ func (c *Wsclient) Trade(symbol []string, tradeEventHandler TradeEventHandler, s
 
 	return serve(config, eventHandler, errHandler)
 }
-
