@@ -33,6 +33,16 @@ func (m *MyStarkContract) DepositERC20(opts *bind.TransactOpts, starkKey *big.In
 	return tx, nil
 }
 
+func (m *MyStarkContract) GetWithdrawalBalance(opts *bind.CallOpts, ownerKey *big.Int, assetId *big.Int) (*big.Int, error) {
+	return big.NewInt(0), nil
+}
+
+func (m *MyStarkContract) Withdraw(opts *bind.TransactOpts, ownerKey *big.Int, assetType *big.Int) (*types.Transaction, error) {
+	tx := &types.Transaction{}
+	tx.SetTime(time.Now())
+	return tx, nil
+}
+
 func TestDepositFromEthereumNetwork(t *testing.T) {
 	privateKey, err := crypto.GenerateKey()
 	assert.NoError(t, err)
@@ -209,4 +219,3 @@ func (m *MyPolygonContract) Deposit(opts *bind.TransactOpts, token common.Addres
 	tx := types.NewTransaction(opts.Nonce.Uint64(), toAddress, opts.Value, opts.GasLimit, opts.GasPrice, []byte{})
 	return tx, nil
 }
-

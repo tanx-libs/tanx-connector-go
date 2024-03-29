@@ -112,8 +112,7 @@ func setAllowance(ctx context.Context, client simulated.Client, tokenContractAdd
 	return nil
 }
 
-
-func  getAllowance(
+func getAllowance(
 	client simulated.Client,
 	ethAddress string,
 	tokenContract string,
@@ -135,3 +134,12 @@ func  getAllowance(
 	return res, nil
 }
 
+func getCoinStatusPayload(currency Currency, paylaod map[string]CoinStatusPayload) (CoinStatusPayload, error) {
+	for _, v := range paylaod {
+		if v.Symbol == currency {
+			return v, nil
+		}
+	}
+
+	return CoinStatusPayload{}, ErrCoinNotFound
+}

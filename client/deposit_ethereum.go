@@ -74,16 +74,6 @@ func (c *Client) getCoinStatus(ctx context.Context) (CoinStatusResponse, error) 
 	return coinStatusResponse, nil
 }
 
-func (c *Client) getCoinStatusPayload(currency Currency) (CoinStatusPayload, error) {
-	for _, v := range c.coinStatus.Payload {
-		if v.Symbol == currency {
-			return v, nil
-		}
-	}
-
-	return CoinStatusPayload{}, ErrCoinNotFound
-}
-
 type VaultResponse struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`
@@ -265,7 +255,7 @@ func (c *Client) SetEthereumAllowance(ctx context.Context, rpcURL string, ethPri
 		return err
 	}
 
-	coinStatus, err := c.getCoinStatusPayload(currency)
+	coinStatus, err := getCoinStatusPayload(currency, c.coinStatus.Payload)
 	if err != nil {
 		return err
 	}
@@ -317,6 +307,8 @@ func (c *Client) SetEthereumAllowance(ctx context.Context, rpcURL string, ethPri
 type StarkexContract interface {
 	DepositEth(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int) (*types.Transaction, error)
 	DepositERC20(opts *bind.TransactOpts, starkKey *big.Int, assetType *big.Int, vaultId *big.Int, quantizedAmount *big.Int) (*types.Transaction, error)
+	GetWithdrawalBalance(opts *bind.CallOpts, ownerKey *big.Int, assetId *big.Int) (*big.Int, error)
+	Withdraw(opts *bind.TransactOpts, ownerKey *big.Int, assetType *big.Int) (*types.Transaction, error)
 }
 
 func (c *Client) DepositFromEthereumNetwork(
@@ -346,7 +338,7 @@ func (c *Client) DepositFromEthereumNetwork(
 	}
 
 	// extracting specific currency information
-	coinStatus, err := c.getCoinStatusPayload(currency)
+	coinStatus, err := getCoinStatusPayload(currency, c.coinStatus.Payload)
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}

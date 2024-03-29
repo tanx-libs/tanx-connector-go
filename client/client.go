@@ -184,6 +184,7 @@ func New(base BaseURL) (*Client, error) {
 	loginurl := baseurl.JoinPath(LOGIN_ENDPOINT)
 	refreshTokenurl := baseurl.JoinPath(REFRESH_TOKEN_ENDPOINT)
 
+	
 	profileurl := baseurl.JoinPath(PROFILE_ENDPOINT)
 	balanceurl := baseurl.JoinPath(BALANCE_ENDPOINT)
 	pnlurl := baseurl.JoinPath(PNL_ENDPOINT)
