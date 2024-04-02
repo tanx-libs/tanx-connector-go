@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var ErrSomething = errors.New("something went wrong")
+// Not logged in error
 var ErrNotLoggedIn = errors.New("not logged in")
 
 // json unmarshaling error
@@ -37,13 +37,3 @@ type ErrSubUnsub struct {
 func (e *ErrSubUnsub) Error() string {
 	return fmt.Sprintf("Debug: %s\nError: %s\n", e.Msg, e.Err)
 }
-
-// websocket write message error
-// type ErrWsWriteJSON struct {
-// 	Msg string
-// 	Err error
-// }
-
-// func (e *ErrWsWriteJSON) Error() string {
-// 	return fmt.Sprintf("Debug: %s\nError: %s\n", e.Msg, e.Err)
-// }

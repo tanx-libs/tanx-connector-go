@@ -6,6 +6,10 @@ import (
 	"log"
 )
 
+// helper function to form subscribe or unsubscribe request for private topics
+/*
+{ "event": "subscribe", "streams": ["trade", "order"] }
+*/
 func SubUnsubPrivateTopics(subUnsub SubUnsub, streams []string) SubUnsubRequest {
 	return SubUnsubRequest{
 		Event:   subUnsub,
@@ -38,6 +42,44 @@ type PrivateOrder struct {
 	UpdatedAt       int64  `json:"updated_at"`
 }
 
+/*
+responses for trade
+
+	{
+	  "trade": {
+	    "amount": "0.001",
+	    "created_at": 1659024869,
+	    "id": 448640,
+	    "market": "btcusdc",
+	    "order_id": 8840859,
+	    "price": "23829.22",
+	    "side": "buy",
+	    "taker_type": "buy",
+	    "total": "23.82922"
+	  }
+	}
+
+responses for order
+{
+  "order": {
+    "at": 1659024868,
+    "avg_price": "23829.22",
+    "created_at": 1659024868,
+    "executed_volume": "0.001",
+    "id": 8840859,
+    "kind": "bid",
+    "market": "btcusdc",
+    "ord_type": "limit",
+    "origin_volume": "0.001",
+    "price": "24000.0",
+    "remaining_volume": "0.0",
+    "side": "buy",
+    "state": "done",
+    "trades_count": 1,
+    "updated_at": 1659024869
+  }
+}
+*/
 type PrivateEvent struct {
 	Trade PrivateTrade `json:"trade"`
 	Order PrivateOrder `json:"order"`
@@ -45,12 +87,7 @@ type PrivateEvent struct {
 
 type PrivateEventHandler func(event *PrivateEvent)
 
-// TradePrivate subscribes to Trade data for authenticated user
-/*
-1. if jwt not present return ErrWsNotLoggedIn
-2. Subscribe payload is different
-3. Handle case where jwt expires
-*/
+// subscribes to Trade data for authenticated user
 func (c *Wsclient) PrivateTrade(symbol []string, privateEventHandler PrivateEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
 	if c.accessToken == "" {
 		return nil, nil, nil, ErrNotLoggedIn

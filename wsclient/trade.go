@@ -19,11 +19,32 @@ type Trades struct {
 	Trades []Trade `json:"trades"`
 }
 
+/*
+	{
+	  "btcusdc.trades": {
+	    "trades": [
+	      {
+	        "amount": "0.001",
+	        "date": 1659023778,
+	        "price": "23935.01",
+	        "taker_type": "buy",
+	        "tid": 448639
+	      }
+	    ]
+	  }
+	}
+*/
 type TradeEvent map[string]Trades
 
 type TradeEventHandler func(event *TradeEvent)
 
-// SubUnsubTradeTopics returns a SubUnsubRequest to subscribe or unsubscribe to Trade data
+// helper function to form subscribe or unsubscribe request for trade topics
+/*
+{
+  "event": "subscribe",
+  "streams": ["btcusdc.trades"]
+}
+*/
 func SubUnsubTradeTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest {
 	streams := make([]string, len(symbol))
 	for i, s := range symbol {
@@ -36,7 +57,7 @@ func SubUnsubTradeTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest {
 	}
 }
 
-// Trade subscribes to Trade data
+// connects you to trade stream
 func (c *Wsclient) Trade(symbol []string, tradeEventHandler TradeEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
 	config := &Config{
 		endpoint:        c.publicURL,

@@ -5,17 +5,13 @@ import (
 	"fmt"
 )
 
-type OrderbookData struct {
-	Asks     []string `json:"asks"`
-	Bids     []string `json:"bids"`
-	Sequence int64    `json:"sequence"`
+// helper function to form subscribe or unsubscribe request for orderbook topics
+/*
+{
+  "event": "subscribe",
+  "streams": ["btcusdc.ob-inc"]
 }
-
-type OrderbookEvent map[string]OrderbookData
-
-type OrderbookEventHandler func(event *OrderbookEvent)
-
-// SubUnsubOrderbookTopics returns a SubUnsubRequest to subscribe or unsubscribe to Orderbook data
+*/
 func SubUnsubOrderbookTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest {
 	topics := make([]string, len(symbol))
 	for i, s := range symbol {
@@ -28,7 +24,34 @@ func SubUnsubOrderbookTopics(subUnsub SubUnsub, symbol []string) SubUnsubRequest
 	}
 }
 
-// Orderbook subscribes to Orderbook data
+type OrderbookData struct {
+	Asks     []string `json:"asks"`
+	Bids     []string `json:"bids"`
+	Sequence int64    `json:"sequence"`
+}
+
+/*
+Response for ask
+{
+	"btcusdc.ob-inc": {
+	"asks": ["23707.65", "0.034"],
+	"sequence": 393494
+	}
+}
+
+Response for bid
+{
+  "btcusdc.ob-inc": {
+    "asks": ["23707.65", "0.034"],
+    "sequence": 393494
+  }
+} 
+*/
+type OrderbookEvent map[string]OrderbookData
+
+type OrderbookEventHandler func(event *OrderbookEvent)
+
+// connects you to orderbook stream
 func (c *Wsclient) Orderbook(symbol []string, orderbookEventHandler OrderbookEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
 	config := &Config{
 		endpoint:        c.publicURL,
