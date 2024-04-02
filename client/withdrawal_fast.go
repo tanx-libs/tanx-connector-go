@@ -26,7 +26,7 @@ type StartFastWithdrawalRequest struct {
 	Network  Network  `json:"network"`
 }
 
-func (c *Client) StartFastWithdrawal(ctx context.Context, opt StartFastWithdrawalRequest) (StartFastWithdrawalResponse, error) {
+func (c *Client) startFastWithdrawal(ctx context.Context, opt StartFastWithdrawalRequest) (StartFastWithdrawalResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
 		return StartFastWithdrawalResponse{}, err
@@ -83,7 +83,7 @@ type ProcessFastWithdrawalRequest struct {
 	FastWithdrawalID int        `json:"fastwithdrawal_withdrawal_id"`
 }
 
-func (c *Client) ProcessFastWithdrawal(ctx context.Context, opt ProcessFastWithdrawalRequest) (ValidateWithdrawalResponse, error) {
+func (c *Client) processFastWithdrawal(ctx context.Context, opt ProcessFastWithdrawalRequest) (ValidateWithdrawalResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
 		return ValidateWithdrawalResponse{}, err
@@ -134,6 +134,10 @@ func (c *Client) ProcessFastWithdrawal(ctx context.Context, opt ProcessFastWithd
 	return processFastWithdrawalResponse, nil
 }
 
+/*
+With Fast Withdrawal, your funds will be processed in an expedited timeframe, often within a few minutes.
+This mode is ideal for users who require immediate access to their funds and are comfortable with paying a fee.
+*/
 func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amount float64, currency Currency, network Network) (ValidateWithdrawalResponse, error) {
 	if amount <= 0 {
 		return ValidateWithdrawalResponse{}, ErrInvalidAmount
@@ -171,8 +175,7 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 		log.Println("coinstatus", coinStatus)
 	}
 
-	// todo
-	respStart, err := c.StartFastWithdrawal(ctx, StartFastWithdrawalRequest{
+	respStart, err := c.startFastWithdrawal(ctx, StartFastWithdrawalRequest{
 		Amount:   amount,
 		Currency: currency,
 		Network:  network,
@@ -192,7 +195,7 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 	log.Println("r", r)
 	log.Println("s", s)
 
-	respValidate, err := c.ProcessFastWithdrawal(ctx, ProcessFastWithdrawalRequest{
+	respValidate, err := c.processFastWithdrawal(ctx, ProcessFastWithdrawalRequest{
 		MsgHash: respStart.Payload.MsgHash,
 		Signature: WSignature{
 			R: r,
@@ -208,6 +211,7 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 	return respValidate, nil
 }
 
+// list all your fast withdrawals
 func (c *Client) ListFastWithdrawal(ctx context.Context, opt ListWithdrawalRequest) (ListWithdrawalResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -243,7 +247,6 @@ func (c *Client) ListFastWithdrawal(ctx context.Context, opt ListWithdrawalReque
 	err = json.NewDecoder(resp.Body).Decode(&listWithdrawalResponse)
 
 	if listWithdrawalResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return ListWithdrawalResponse{}, &ErrClient{
 				Status: resp.StatusCode,

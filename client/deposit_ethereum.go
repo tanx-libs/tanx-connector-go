@@ -155,7 +155,6 @@ type CryptoDepositResponse struct {
 	Payload interface{} `json:"payload"`
 }
 
-// CryptoDepositStart
 func (c *Client) cryptoDepositStart(ctx context.Context, depositReq CryptoDepositRequest) (CryptoDepositResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -208,19 +207,16 @@ func (c *Client) cryptoDepositStart(ctx context.Context, depositReq CryptoDeposi
 
 func (c *Client) ethereumInit(ctx context.Context, rpcURL string) error {
 	if c.ethClient == nil {
-		// setting up client
 		ethClient, err := ethclient.Dial(rpcURL)
 		if err != nil {
 			return err
 		}
 
-		// getting coin information here
 		coinStatus, err := c.getCoinStatus(ctx)
 		if err != nil {
 			return err
 		}
 
-		// setting up starkex contract here
 		var starkaddr common.Address
 		var starkexContract StarkexContract
 		switch c.network {
@@ -248,8 +244,12 @@ func (c *Client) ethereumInit(ctx context.Context, rpcURL string) error {
 	return nil
 }
 
+/*
+Granting permission for token spending enables transactions on Ethereum.
+
+Supported EVM cross-chain networks: 'ETHEREUM', 'POLYGON', 'OPTIMISM', 'ARBITRUM', 'LINEA', 'SCROLL', 'MODE'.
+*/
 func (c *Client) SetEthereumAllowance(ctx context.Context, rpcURL string, ethPrivateKey string, currency Currency, amount float64) error {
-	// one time setup
 	err := c.ethereumInit(ctx, rpcURL)
 	if err != nil {
 		return err
@@ -265,13 +265,11 @@ func (c *Client) SetEthereumAllowance(ctx context.Context, rpcURL string, ethPri
 		return err
 	}
 
-	// decimal
 	decimal, err := strconv.Atoi(coinStatus.Decimal)
 	if err != nil {
 		return err
 	}
 
-	// signer function
 	privateKey, err := crypto.HexToECDSA(ethPrivateKey)
 	if err != nil {
 		return err
@@ -311,6 +309,10 @@ type StarkexContract interface {
 	Withdraw(opts *bind.TransactOpts, ownerKey *big.Int, assetType *big.Int) (*types.Transaction, error)
 }
 
+/*
+In this method, you will use an ETH private key, stark public key and an RPC URL to execute a deposit.
+You'll also need to create an RPC URL using services like Infura, Alchemy, etc.
+*/
 func (c *Client) DepositFromEthereumNetwork(
 	ctx context.Context,
 	rpcURL string,
@@ -389,7 +391,7 @@ func (c *Client) DepositFromEthereumNetwork(
 	if err != nil {
 		return CryptoDepositResponse{}, err
 	}
-	quantizedAmount := ToWei(amount, quantization)
+	quantizedAmount := toWei(amount, quantization)
 
 	// signer function
 	privateKey, err := crypto.HexToECDSA(ethPrivateKey)

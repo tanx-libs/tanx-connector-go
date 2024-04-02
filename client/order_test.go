@@ -118,7 +118,7 @@ func TestOrderNonce(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.OrderNonce(ctx, OrderNonceRequest{})
+			got, err := client.orderNonce(ctx, OrderNonceRequest{})
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("%+v", err)

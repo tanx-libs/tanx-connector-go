@@ -55,6 +55,54 @@ type OrderBookPayload struct {
 	Bids []Bid `json:"bids"`
 }
 
+/*
+{
+  "status": "success",
+  "message": "Retrieval Successful",
+  "payload": {
+    "asks": [
+      {
+        "id": 7495410,
+        "uuid": "5c30a97a-39b1-4289-b119-5d0ffd96aaa5",
+        "side": "sell",
+        "ord_type": "market",
+        "price": null,
+        "avg_price": "0.0",
+        "state": "wait",
+        "market": "btcusdc",
+        "created_at": "2022-07-20T04:14:08+02:00",
+        "updated_at": "2022-07-20T04:14:08+02:00",
+        "origin_volume": "0.0006",
+        "remaining_volume": "0.0006",
+        "executed_volume": "0.0",
+        "maker_fee": "0.001",
+        "taker_fee": "0.001",
+        "trades_count": 0
+      }
+    ],
+    "bids": [
+      {
+        "id": 7470160,
+        "uuid": "795cfe5d-06ab-4150-8f44-06dc2b0e88f8",
+        "side": "buy",
+        "ord_type": "limit",
+        "price": "23490.0",
+        "avg_price": "23489.7",
+        "state": "wait",
+        "market": "btcusdc",
+        "created_at": "2022-07-20T00:59:57+02:00",
+        "updated_at": "2022-07-20T01:47:44+02:00",
+        "origin_volume": "2.1772",
+        "remaining_volume": "0.0083",
+        "executed_volume": "2.1689",
+        "maker_fee": "0.001",
+        "taker_fee": "0.001",
+        "trades_count": 22
+      }
+    ]
+  }
+}
+*/
 type OrderBookResponse struct {
 	Status  Status           `json:"status"`
 	Message string           `json:"message"`

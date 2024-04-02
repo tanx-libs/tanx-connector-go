@@ -12,8 +12,51 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient/simulated"
+	"github.com/shopspring/decimal"
 	"github.com/tanx-libs/tanx-connector-go/contract"
 )
+
+
+func toDecimal(ivalue interface{}, decimals int) *big.Float {
+	value := new(big.Int)
+	switch v := ivalue.(type) {
+	case string:
+		value.SetString(v, 10)
+	case *big.Int:
+		value = v
+	}
+
+	mul := decimal.NewFromFloat(float64(10)).Pow(decimal.NewFromFloat(float64(decimals)))
+	num, _ := decimal.NewFromString(value.String())
+	result := num.Div(mul)
+
+	return result.BigFloat()
+}
+
+
+func toWei(iamount interface{}, decimals int) *big.Int {
+	amount := decimal.NewFromFloat(0)
+	switch v := iamount.(type) {
+	case string:
+		amount, _ = decimal.NewFromString(v)
+	case float64:
+		amount = decimal.NewFromFloat(v)
+	case int64:
+		amount = decimal.NewFromFloat(float64(v))
+	case decimal.Decimal:
+		amount = v
+	case *decimal.Decimal:
+		amount = *v
+	}
+
+	mul := decimal.NewFromFloat(float64(10)).Pow(decimal.NewFromFloat(float64(decimals)))
+	result := amount.Mul(mul)
+
+	wei := new(big.Int)
+	wei.SetString(result.String(), 10)
+
+	return wei
+}
 
 func getTransactionOpt(ctx context.Context, client simulated.Client, ethPrivateKey string, signerFn bind.SignerFn, amount float64, decimal int) (*bind.TransactOpts, error) {
 	if ethPrivateKey[:2] == "0x" {
@@ -38,7 +81,7 @@ func getTransactionOpt(ctx context.Context, client simulated.Client, ethPrivateK
 		return nil, err
 	}
 
-	amountInWei := ToWei(amount, decimal)
+	amountInWei := toWei(amount, decimal)
 
 	tipCap, _ := client.SuggestGasTipCap(context.Background())
 	feeCap, _ := client.SuggestGasPrice(context.Background())
@@ -84,7 +127,7 @@ func getTokenBalance(ctx context.Context, client simulated.Client, ethAddress st
 		}
 	}
 
-	return ToDecimal(balance, d), nil
+	return toDecimal(balance, d), nil
 }
 
 func setAllowance(ctx context.Context, client simulated.Client, tokenContractAddress string, txOpts *bind.TransactOpts, senderAddr common.Address, blockchainDecimal int, allowance float64) error {
@@ -102,7 +145,7 @@ func setAllowance(ctx context.Context, client simulated.Client, tokenContractAdd
 		return err
 	}
 
-	amountInWei := ToWei(allowance, blockchainDecimal)
+	amountInWei := toWei(allowance, blockchainDecimal)
 
 	_, err = erc20Contract.Approve(txOpts, senderAddr, amountInWei)
 	if err != nil {
@@ -129,7 +172,7 @@ func getAllowance(
 		return 0, err
 	}
 
-	res, _ := ToDecimal(allowance, decimal).Float64()
+	res, _ := toDecimal(allowance, decimal).Float64()
 
 	return res, nil
 }

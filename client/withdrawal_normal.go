@@ -34,7 +34,7 @@ type StartNormalWithdrawalRequest struct {
 	Currency Currency `json:"token_id"`
 }
 
-func (c *Client) StartNormalWithdrawal(ctx context.Context, opt StartNormalWithdrawalRequest) (StartNormalWithdrawalResponse, error) {
+func (c *Client) startNormalWithdrawal(ctx context.Context, opt StartNormalWithdrawalRequest) (StartNormalWithdrawalResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
 		return StartNormalWithdrawalResponse{}, err
@@ -113,7 +113,7 @@ type ValidateNormalWithdrawalRequest struct {
 	Nonce       int        `json:"nonce"`
 }
 
-func (c *Client) ValidateNormalWithdrawal(ctx context.Context, opt ValidateNormalWithdrawalRequest) (ValidateWithdrawalResponse, error) {
+func (c *Client) validateNormalWithdrawal(ctx context.Context, opt ValidateNormalWithdrawalRequest) (ValidateWithdrawalResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
 		return ValidateWithdrawalResponse{}, err
@@ -164,7 +164,10 @@ func (c *Client) ValidateNormalWithdrawal(ctx context.Context, opt ValidateNorma
 	return validateWithdrawalResponse, nil
 }
 
-// initiateNormalWithdrawal initiates a normal withdrawal
+/*
+With Normal Withdrawal, your requested funds will be processed within a standard time frame (24 hours). 
+This mode is suitable for users who are not in a rush to access their funds and are comfortable with the regular processing time
+*/
 func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey string, amount float64, currency Currency) (ValidateWithdrawalResponse, error) {
 	if amount <= 0 {
 		return ValidateWithdrawalResponse{}, ErrInvalidAmount
@@ -175,7 +178,6 @@ func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey s
 		return ValidateWithdrawalResponse{}, err
 	}
 
-	// todo check if currency there or not
 	coinStatus, err := c.getCoinStatus(ctx)
 	if err != nil {
 		return ValidateWithdrawalResponse{}, err
@@ -187,7 +189,7 @@ func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey s
 		return ValidateWithdrawalResponse{}, err
 	}
 
-	respStart, err := c.StartNormalWithdrawal(ctx, StartNormalWithdrawalRequest{
+	respStart, err := c.startNormalWithdrawal(ctx, StartNormalWithdrawalRequest{
 		Amount:   amount,
 		Currency: currency,
 	})
@@ -211,7 +213,7 @@ func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey s
 	log.Println("r", r)
 	log.Println("s", s)
 
-	respValidate, err := c.ValidateNormalWithdrawal(ctx, ValidateNormalWithdrawalRequest{
+	respValidate, err := c.validateNormalWithdrawal(ctx, ValidateNormalWithdrawalRequest{
 		MessageHash: msgHash[2:],
 		Signature: WSignature{
 			R: r,
@@ -226,6 +228,10 @@ func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey s
 	return respValidate, nil
 }
 
+/*
+WAIT for up to 24 hours.
+Check whether the withdrawn balance is pending by calling the "GetPendingNormalWithdrawalAmountByCoin" function with the required parameters.
+*/
 func (c *Client) GetPendingNormalWithdrawalAmountByCoin(ctx context.Context, rpcURL string, userPublicEthAddress string, currency Currency) (string, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -271,9 +277,10 @@ func (c *Client) GetPendingNormalWithdrawalAmountByCoin(ctx context.Context, rpc
 		return "", err
 	}
 
-	return fmt.Sprintf("%f", ToDecimal(balance, bd)), nil
+	return fmt.Sprintf("%f", toDecimal(balance, bd)), nil
 }
 
+// In the final step, if you find the balance is more than 0, you can use the "CompleteNormalWithdrawal" function to withdraw the cumulative amount to your ETH wallet.
 func (c *Client) CompleteNormalWithdrawal(ctx context.Context, rpcURL string, ethPrivateKey string, userPublicEthAddress string, currency Currency) (string, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -361,10 +368,11 @@ type ListWithdrawalResponse struct {
 }
 
 type ListWithdrawalRequest struct {
-	Page    int    `json:"page"`
+	Page    int     `json:"page"`
 	Network Network `json:"network"`
 }
 
+// list all your normal withdrawals
 func (c *Client) ListNormalWithdrawal(ctx context.Context, opt ListWithdrawalRequest) (ListWithdrawalResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -400,7 +408,6 @@ func (c *Client) ListNormalWithdrawal(ctx context.Context, opt ListWithdrawalReq
 	err = json.NewDecoder(resp.Body).Decode(&listWithdrawalResponse)
 
 	if listWithdrawalResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return ListWithdrawalResponse{}, &ErrClient{
 				Status: resp.StatusCode,

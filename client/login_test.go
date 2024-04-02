@@ -37,7 +37,7 @@ func TestSignPayload(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := SignPayload(tc.Params[0], tc.Params[1])
+			_, err := signPayload(tc.Params[0], tc.Params[1])
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)

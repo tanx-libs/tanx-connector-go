@@ -148,6 +148,7 @@ func (c *Client) polygonInit(ctx context.Context, rpcURL string) error {
 	return nil
 }
 
+// Granting permission for token spending enables transactions on Polygon.
 func (c *Client) SetPolygonAllowance(ctx context.Context, rpcURL string, ethPrivateKey string, currency Currency, amount float64) error {
 	// one time setup
 	err := c.polygonInit(ctx, rpcURL)
@@ -202,6 +203,10 @@ type PolygonContract interface {
 	Deposit(opts *bind.TransactOpts, token common.Address, amount *big.Int) (*types.Transaction, error)
 }
 
+/*
+In this method, you will use an ETH private key, stark public key and an RPC URL to execute a Cross-Chain deposit.
+You'll also need to create an RPC URL using services like Infura, Alchemy, etc.
+*/
 func (c *Client) DepositFromPolygonNetwork(
 	ctx context.Context,
 	rpcURL string,
@@ -305,7 +310,7 @@ func (c *Client) DepositFromPolygonNetwork(
 				}
 		}
 
-		quantizedAmount := ToWei(amount, blockchainDecimal)
+		quantizedAmount := toWei(amount, blockchainDecimal)
 		address := common.HexToAddress(currentCoin.TokenContract)
 		transaction, err = c.polygonContract.Deposit(opt, address, quantizedAmount)
 		if err != nil {
@@ -346,6 +351,7 @@ type ListDepositsResponse struct {
 	} `json:"payload"`
 }
 
+// list all the deposits
 func (c *Client) ListAllDeposits(ctx context.Context) (ListDepositsResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {

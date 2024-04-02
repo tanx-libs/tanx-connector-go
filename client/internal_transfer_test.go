@@ -97,7 +97,7 @@ func TestInternalTransferInitiate(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.InternalTransferInitiate(ctx, tc.opt)
+			got, err := client.internalTransferInitiate(ctx, tc.opt)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)
@@ -176,7 +176,7 @@ func TestInternalTransferProcess(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.InternalTransferProcess(ctx, tc.opt)
+			got, err := client.internalTransferProcess(ctx, tc.opt)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)

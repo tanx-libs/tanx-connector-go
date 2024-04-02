@@ -29,7 +29,7 @@ type OrderNonceResponse struct {
 	Payload OrderNoncePayload `json:"payload"`
 }
 
-func (c *Client) OrderNonce(ctx context.Context, opt OrderNonceRequest) (OrderNonceResponse, error) {
+func (c *Client) orderNonce(ctx context.Context, opt OrderNonceRequest) (OrderNonceResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
 		return OrderNonceResponse{}, err
@@ -110,19 +110,44 @@ type OrderPayload struct {
 	TradesCount     int    `json:"trades_count"`
 }
 
+/*
+	{
+	  "status": "success",
+	  "message": "Created Order Successfully",
+	  "payload": {
+	    "id": 904,
+	    "uuid": "6c79cde4-1e8f-4446-9b4a-ba176d50f08b",
+	    "side": "sell",
+	    "ord_type": "limit",
+	    "price": "29580.51",
+	    "avg_price": "0.0",
+	    "state": "pending",
+	    "market": "btcusdt",
+	    "created_at": "2022-05-27T12:36:57+02:00",
+	    "updated_at": "2022-05-27T12:36:57+02:00",
+	    "origin_volume": "0.015",
+	    "remaining_volume": "0.015",
+	    "executed_volume": "0.0",
+	    "maker_fee": "0.0",
+	    "taker_fee": "0.0",
+	    "trades_count": 0
+	  }
+	}
+*/
 type OrderCreateResponse struct {
 	Status  Status       `json:"status"`
 	Message string       `json:"message"`
 	Payload OrderPayload `json:"payload"`
 }
 
+// Create a new order
 func (c *Client) OrderCreate(ctx context.Context, starkPrivateKey string, opt OrderNonceRequest) (OrderCreateResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
 		return OrderCreateResponse{}, err
 	}
 
-	orderNonceResponse, err := c.OrderNonce(ctx, opt)
+	orderNonceResponse, err := c.orderNonce(ctx, opt)
 	if err != nil {
 		return OrderCreateResponse{}, err
 	}
@@ -189,12 +214,41 @@ func (c *Client) OrderCreate(ctx context.Context, starkPrivateKey string, opt Or
 	return orderCreateResponse, nil
 }
 
+/*
+	{
+	  "status": "success",
+	  "message": "Order Retrieved Successfully",
+	  "payload": {
+	    "id": 23157052,
+	    "uuid": "a0b17d1f-0f2c-4c93-ad40-2e71077de499",
+	    "side": "buy",
+	    "ord_type": "market",
+	    "price": null,
+	    "avg_price": "0.0",
+	    "state": "cancel",
+	    "market": "btcusdc",
+	    "created_at": "2022-11-08T11:53:09+01:00",
+	    "updated_at": "2022-11-08T11:53:14+01:00",
+	    "origin_volume": "0.0051",
+	    "remaining_volume": "0.0051",
+	    "executed_volume": "0.0",
+	    "maker_fee": "0.001",
+	    "taker_fee": "0.001",
+	    "trades_count": 0,
+	    "trades": []
+	  }
+	}
+*/
 type OrderGetResponse struct {
 	Status  Status       `json:"status"`
 	Message string       `json:"message"`
 	Payload OrderPayload `json:"payload"`
 }
 
+/*
+Retrieve a single order’s details using this endpoint.
+Please note that this is a Private 🔒 route which means it needs to be authorised by the account initiating this request.
+*/
 func (c *Client) OrderGet(ctx context.Context, id int) (OrderGetResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -240,12 +294,6 @@ func (c *Client) OrderGet(ctx context.Context, id int) (OrderGetResponse, error)
 	return ordersGetResponse, nil
 }
 
-type OrdersListResponse struct {
-	Status  Status         `json:"status"`
-	Message string         `json:"message"`
-	Payload []OrderPayload `json:"payload"`
-}
-
 type OrderListOptions struct {
 	Limit     int    `json:"limit"`
 	Page      int    `json:"page"`
@@ -259,6 +307,60 @@ type OrderListOptions struct {
 	Side      string `json:"side"`
 }
 
+/*
+	{
+	  "status": "success",
+	  "message": "Orders Retrieved Successfully",
+	  "payload": [
+	    {
+	      "id": 1739939,
+	      "uuid": "b658b41f-fe68-4561-801d-dfa94c3ca1b5",
+	      "side": "buy",
+	      "ord_type": "limit",
+	      "price": "450.0",
+	      "avg_price": "0.0",
+	      "state": "cancel",
+	      "market": "ethusdc",
+	      "created_at": "2022-06-16T22:41:14+02:00",
+	      "updated_at": "2022-06-16T22:43:30+02:00",
+	      "origin_volume": "0.001",
+	      "remaining_volume": "0.001",
+	      "executed_volume": "0.0",
+	      "maker_fee": "0.001",
+	      "taker_fee": "0.001",
+	      "trades_count": 0
+	    },
+	    {
+	      "id": 1739940,
+	      "uuid": "19bce015-c143-449f-af2b-fdcfa6384015",
+	      "side": "buy",
+	      "ord_type": "limit",
+	      "price": "1134.0",
+	      "avg_price": "1134.0",
+	      "state": "done",
+	      "market": "ethusdc",
+	      "created_at": "2022-06-16T22:41:24+02:00",
+	      "updated_at": "2022-06-16T22:41:49+02:00",
+	      "origin_volume": "0.001",
+	      "remaining_volume": "0.0",
+	      "executed_volume": "0.001",
+	      "maker_fee": "0.001",
+	      "taker_fee": "0.001",
+	      "trades_count": 1
+	    }
+	  ]
+	}
+*/
+type OrdersListResponse struct {
+	Status  Status         `json:"status"`
+	Message string         `json:"message"`
+	Payload []OrderPayload `json:"payload"`
+}
+
+/*
+Retrieve details of all orders for a user using this endpoint.
+Please note that this is a Private 🔒 route which means it needs to be authorized by the account initiating this request.
+*/
 func (c *Client) OrdersList(ctx context.Context, opt OrderListOptions) (OrdersListResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -348,21 +450,44 @@ func (c *Client) OrdersList(ctx context.Context, opt OrderListOptions) (OrdersLi
 	return ordersListResponse, nil
 }
 
-/*
-	{
-	  "order_id": 3
-	}
-*/
 type OrderCancelRequest struct {
 	OrderID int `json:"order_id"`
 }
 
+/*
+	{
+	  "status": "success",
+	  "message": "Cancelled Order Successfully",
+	  "payload": {
+	    "order_id": 3,
+	    "uuid": "3626e3a1-c15f-4979-97f2-30ce8845578d",
+	    "side": "buy",
+	    "ord_type": "limit",
+	    "price": "1663.0",
+	    "avg_price": "1663.0",
+	    "state": "wait",
+	    "market": "ethusdc",
+	    "created_at": "2022-08-05T12:20:22+02:00",
+	    "updated_at": "2022-08-05T12:21:28+02:00",
+	    "origin_volume": "0.003",
+	    "remaining_volume": "0.0021",
+	    "executed_volume": "0.0009",
+	    "maker_fee": "0.001",
+	    "taker_fee": "0.001",
+	    "trades_count": 3
+	  }
+	}
+*/
 type OrderCancelResponse struct {
 	Status  Status       `json:"status"`
 	Message string       `json:"message"`
 	Payload OrderPayload `json:"payload"`
 }
 
+/*
+This endpoint is used to cancel a limit order which hasn’t already been executed at a given time.
+Please note that this is a Private 🔒 route which means it needs to be authorised by the account initiating this request.
+*/
 func (c *Client) OrderCancel(ctx context.Context, orderID int) (OrderCancelResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -410,7 +535,7 @@ func (c *Client) OrderCancel(ctx context.Context, orderID int) (OrderCancelRespo
 		}
 
 		return OrderCancelResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, orderCancelResponse.Message)
-	
+
 	} else if err != nil {
 		return OrderCancelResponse{}, &ErrJSONDecoding{Err: err}
 	}
@@ -418,42 +543,16 @@ func (c *Client) OrderCancel(ctx context.Context, orderID int) (OrderCancelRespo
 	return orderCancelResponse, nil
 }
 
-/*
-	{
-	  "status": "success",
-	  "message": "Trades Retrieved Successfully",
-	  "payload": [
-	    {
-	      "id": 7281,
-	      "price": "1134.0",
-	      "amount": "0.001",
-	      "total": "1.134",
-	      "fee_currency": "eth",
-	      "fee": "0.001",
-	      "fee_amount": "0.000001",
-	      "market": "ethusdc",
-	      "created_at": "2022-06-16T22:41:49+02:00",
-	      "taker_type": "sell",
-	      "side": "buy",
-	      "order_id": 1739940
-	    },
-	    {
-	      "id": 7280,
-	      "price": "1134.0",
-	      "amount": "0.001",
-	      "total": "1.134",
-	      "fee_currency": "eth",
-	      "fee": "0.001",
-	      "fee_amount": "0.000001",
-	      "market": "ethusdc",
-	      "created_at": "2022-06-16T22:37:56+02:00",
-	      "taker_type": "sell",
-	      "side": "buy",
-	      "order_id": 1739937
-	    }
-	  ]
-	}
-*/
+
+type TradesListOptions struct {
+	Limit     int
+	Page      int
+	Market    string
+	StartTime int
+	EndTime   int
+	OrderBy   string
+}
+
 type TradePayload struct {
 	ID          int    `json:"id"`
 	Price       string `json:"price"`
@@ -469,21 +568,52 @@ type TradePayload struct {
 	OrderID     int    `json:"order_id"`
 }
 
+/*
+{
+  "status": "success",
+  "message": "Trades Retrieved Successfully",
+  "payload": [
+    {
+      "id": 7281,
+      "price": "1134.0",
+      "amount": "0.001",
+      "total": "1.134",
+      "fee_currency": "eth",
+      "fee": "0.001",
+      "fee_amount": "0.000001",
+      "market": "ethusdc",
+      "created_at": "2022-06-16T22:41:49+02:00",
+      "taker_type": "sell",
+      "side": "buy",
+      "order_id": 1739940
+    },
+    {
+      "id": 7280,
+      "price": "1134.0",
+      "amount": "0.001",
+      "total": "1.134",
+      "fee_currency": "eth",
+      "fee": "0.001",
+      "fee_amount": "0.000001",
+      "market": "ethusdc",
+      "created_at": "2022-06-16T22:37:56+02:00",
+      "taker_type": "sell",
+      "side": "buy",
+      "order_id": 1739937
+    }
+  ]
+}
+*/
 type TradesListResponse struct {
 	Status  Status         `json:"status"`
 	Message string         `json:"message"`
 	Payload []TradePayload `json:"payload"`
 }
 
-type TradesListOptions struct {
-	Limit     int
-	Page      int
-	Market    string
-	StartTime int
-	EndTime   int
-	OrderBy   string
-}
-
+/*
+Retrieve details of all trades executed for a user by making use of certain filters.
+Please note that this is a Private 🔒 route which means it needs to be authorized by the account initiating this request.
+*/
 func (c *Client) TradesList(ctx context.Context, opt TradesListOptions) (TradesListResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {

@@ -93,7 +93,7 @@ func TestStartNormalWithdrawal(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.StartNormalWithdrawal(ctx, tc.opt)
+			got, err := client.startNormalWithdrawal(ctx, tc.opt)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)
@@ -179,7 +179,7 @@ func TestValidateNormalWithdrawal(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.ValidateNormalWithdrawal(ctx, tc.opt)
+			got, err := client.validateNormalWithdrawal(ctx, tc.opt)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)

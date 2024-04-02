@@ -85,7 +85,7 @@ func TestStartFastWithdrawal(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.StartFastWithdrawal(ctx, tc.opt)
+			got, err := client.startFastWithdrawal(ctx, tc.opt)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)
@@ -170,7 +170,7 @@ func TestProcessFastWithdrawal(t *testing.T) {
 				defer cancel()
 			}
 
-			got, err := client.ProcessFastWithdrawal(ctx, tc.opt)
+			got, err := client.processFastWithdrawal(ctx, tc.opt)
 			if tc.wantErr {
 				assert.Error(t, err)
 				t.Logf("Error: %v", err)
