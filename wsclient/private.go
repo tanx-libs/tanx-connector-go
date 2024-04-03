@@ -3,7 +3,6 @@ package wsclient
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 )
 
 // helper function to form subscribe or unsubscribe request for private topics
@@ -94,7 +93,6 @@ func (c *Wsclient) PrivateTrade(symbol []string, privateEventHandler PrivateEven
 	}
 
 	url := fmt.Sprintf("%s?auth_header=%s", c.privateURL, c.accessToken)
-	log.Println(url)
 	config := &Config{
 		endpoint:        url,
 		subUnsubRequest: SubUnsubPrivateTopics(SUBSCRIBE, symbol),

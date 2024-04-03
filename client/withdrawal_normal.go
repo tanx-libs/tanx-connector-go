@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -164,6 +163,7 @@ func (c *Client) validateNormalWithdrawal(ctx context.Context, opt ValidateNorma
 	return validateWithdrawalResponse, nil
 }
 
+
 /*
 With Normal Withdrawal, your requested funds will be processed within a standard time frame (24 hours). 
 This mode is suitable for users who are not in a rush to access their funds and are comfortable with the regular processing time
@@ -182,7 +182,6 @@ func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey s
 	if err != nil {
 		return ValidateWithdrawalResponse{}, err
 	}
-	log.Println("coinstatus", coinStatus)
 
 	_, err = getCoinStatusPayload(currency, coinStatus.Payload)
 	if err != nil {
@@ -196,22 +195,17 @@ func (c *Client) InitiateNormalWithdrawal(ctx context.Context, starkPrivateKey s
 	if err != nil {
 		return ValidateWithdrawalResponse{}, err
 	}
-	log.Println("respStart", respStart)
 
 	if starkPrivateKey[:2] != "0x" {
 		starkPrivateKey = "0x" + starkPrivateKey
 	}
 
-	log.Println("respStart.Payload.MsgHash", respStart.Payload.MsgHash)
 
 	numBig := new(big.Int)
 	numBig.SetString(respStart.Payload.MsgHash, 10)
 	msgHash := hexutil.EncodeBig(numBig)
-	log.Println("msgHash", msgHash)
 
 	r, s := crypto_cpp.Sign(starkPrivateKey, msgHash, "0x1")
-	log.Println("r", r)
-	log.Println("s", s)
 
 	respValidate, err := c.validateNormalWithdrawal(ctx, ValidateNormalWithdrawalRequest{
 		MessageHash: msgHash[2:],
@@ -270,7 +264,6 @@ func (c *Client) GetPendingNormalWithdrawalAmountByCoin(ctx context.Context, rpc
 	if err != nil {
 		return "", err
 	}
-	log.Printf("balance: %v", balance)
 
 	bd, err := strconv.Atoi(blockchainDecimal)
 	if err != nil {
@@ -279,6 +272,7 @@ func (c *Client) GetPendingNormalWithdrawalAmountByCoin(ctx context.Context, rpc
 
 	return fmt.Sprintf("%f", toDecimal(balance, bd)), nil
 }
+
 
 // In the final step, if you find the balance is more than 0, you can use the "CompleteNormalWithdrawal" function to withdraw the cumulative amount to your ETH wallet.
 func (c *Client) CompleteNormalWithdrawal(ctx context.Context, rpcURL string, ethPrivateKey string, userPublicEthAddress string, currency Currency) (string, error) {
@@ -338,7 +332,6 @@ func (c *Client) CompleteNormalWithdrawal(ctx context.Context, rpcURL string, et
 		return "", err
 	}
 
-	log.Printf("res: %v", res)
 
 	return res.Hash().Hex(), nil
 }

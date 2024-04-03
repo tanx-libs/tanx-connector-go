@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/tanx-libs/tanx-connector-go/crypto_cpp"
@@ -137,6 +136,8 @@ func (c *Client) processFastWithdrawal(ctx context.Context, opt ProcessFastWithd
 /*
 With Fast Withdrawal, your funds will be processed in an expedited timeframe, often within a few minutes.
 This mode is ideal for users who require immediate access to their funds and are comfortable with paying a fee.
+
+On the cross-chain withdrawal network, we only support fast withdrawals.
 */
 func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amount float64, currency Currency, network Network) (ValidateWithdrawalResponse, error) {
 	if amount <= 0 {
@@ -156,7 +157,6 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 
 		polygonConfig := networkConfig.Payload.NetworkConfig[network]
 		allowedTokens := polygonConfig.AllowedTokensForDeposit
-
 		if !isPresent(allowedTokens, currency) {
 			return ValidateWithdrawalResponse{}, ErrCoinNotFound
 		}
@@ -172,7 +172,6 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 			return ValidateWithdrawalResponse{}, err
 		}
 
-		log.Println("coinstatus", coinStatus)
 	}
 
 	respStart, err := c.startFastWithdrawal(ctx, StartFastWithdrawalRequest{
@@ -183,17 +182,13 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 	if err != nil {
 		return ValidateWithdrawalResponse{}, err
 	}
-	log.Printf("respStart %+v", respStart)
 
 	if starkPrivateKey[:2] != "0x" {
 		starkPrivateKey = "0x" + starkPrivateKey
 	}
 
-	log.Printf("msg_hash: %+v", respStart.Payload.MsgHash)
 
 	r, s := crypto_cpp.Sign(starkPrivateKey, respStart.Payload.MsgHash, "0x1")
-	log.Println("r", r)
-	log.Println("s", s)
 
 	respValidate, err := c.processFastWithdrawal(ctx, ProcessFastWithdrawalRequest{
 		MsgHash: respStart.Payload.MsgHash,
@@ -207,7 +202,6 @@ func (c *Client) FastWithdrawal(ctx context.Context, starkPrivateKey string, amo
 		return ValidateWithdrawalResponse{}, err
 	}
 
-	log.Println("respValidate", respValidate)
 	return respValidate, nil
 }
 
