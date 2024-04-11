@@ -11,8 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// Helper function for signing the payload using your ethereum private key
-func SignPayload(payload string, privateKey string) (string, error) {
+func signPayload(payload string, privateKey string) (string, error) {
 	ecdsaPrivateKey, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
 		return "", err
@@ -36,9 +35,9 @@ type NonceRequest struct {
 
 /*
 	{
-	  "status": "success",
-	  "message": "Cached Nonce Acquired",
-	  "payload": "You’re now signing into TanX, make sure the origin is https://testnet.tanx.fi (Login-code:Yvw9FHZ4JwyhuVobAZAWjd)"
+		"status": "success",
+		"message": "Cached Nonce Acquired",
+		"payload": "You’re now signing into TanX, make sure the origin is https://testnet.tanx.fi (Login-code:Yvw9FHZ4JwyhuVobAZAWjd)"
 	}
 */
 type NonceResponse struct {
@@ -75,7 +74,7 @@ func (c *Client) Nonce(ctx context.Context, ethAddress string) (NonceResponse, e
 
 	var nonceResponse NonceResponse
 	err = json.NewDecoder(resp.Body).Decode(&nonceResponse)
-	
+
 	if nonceResponse.Status == ERROR {
 		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
@@ -114,6 +113,20 @@ type JWTPayload struct {
 	Signature string `json:"signature"`
 }
 
+/*
+	{
+	  status: 'success',
+	  message: 'Login Successful',
+	  payload: {
+	    uid: 'IDDAF4F5E3C7',
+	    signature: ''
+	  },
+	  token: {
+	    refresh: '',
+	    access: ''
+	  }
+	}
+*/
 type JWTResponse struct {
 	Status  Status     `json:"status"`
 	Message string     `json:"message"`
@@ -142,7 +155,7 @@ func (c *Client) Login(ctx context.Context, ethAddress string, privateKey string
 		return JWTResponse{}, err
 	}
 
-	signedPayload, err := SignPayload(nonceResponse.Payload, privateKey)
+	signedPayload, err := signPayload(nonceResponse.Payload, privateKey)
 	if err != nil {
 		return JWTResponse{}, err
 	}
@@ -172,9 +185,8 @@ func (c *Client) Login(ctx context.Context, ethAddress string, privateKey string
 
 	var jwtResponse JWTResponse
 	err = json.NewDecoder(resp.Body).Decode(&jwtResponse)
-	
+
 	if jwtResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return JWTResponse{}, &ErrClient{
 				Status: resp.StatusCode,
@@ -188,7 +200,7 @@ func (c *Client) Login(ctx context.Context, ethAddress string, privateKey string
 		}
 
 		return JWTResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, nonceResponse.Message)
-	
+
 	} else if err != nil {
 		return JWTResponse{}, &ErrJSONDecoding{Err: err}
 	}
@@ -202,18 +214,28 @@ type RefreshTokenRequest struct {
 	Refresh string `json:"refresh"`
 }
 
-
 type RefreshTokenPayload struct {
 	Access  string `json:"access"`
 	Refresh string `json:"refresh"`
 }
 
+/*
+	{
+	    "status": "success",
+	    "message": "",
+	    "payload": {
+	        "access": "eybdgyr0iOi....gVbdghy7g_Pn3QCU",
+	        "refresh": "eyJ0eXAiOi....mVeL25ytndhltJL4"
+	    }
+	}
+*/
 type RefreshTokenResponse struct {
-	Status  Status `json:"status"`
-	Message string `json:"message"`
+	Status  Status              `json:"status"`
+	Message string              `json:"message"`
 	Payload RefreshTokenPayload `json:"payload"`
 }
 
+// refresh tokens when expired
 func (c *Client) RefreshTokens(ctx context.Context) (RefreshTokenResponse, error) {
 	refreshRequest := RefreshTokenRequest{
 		Refresh: c.refreshToken,
@@ -239,7 +261,7 @@ func (c *Client) RefreshTokens(ctx context.Context) (RefreshTokenResponse, error
 
 	var refreshResponse RefreshTokenResponse
 	err = json.NewDecoder(resp.Body).Decode(&refreshResponse)
-	
+
 	if refreshResponse.Status == ERROR {
 		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
@@ -255,7 +277,7 @@ func (c *Client) RefreshTokens(ctx context.Context) (RefreshTokenResponse, error
 		}
 
 		return RefreshTokenResponse{}, fmt.Errorf("status: %d\nerror: %s", resp.StatusCode, refreshResponse.Message)
-	
+
 	} else if err != nil {
 		return RefreshTokenResponse{}, &ErrJSONDecoding{Err: err}
 	}

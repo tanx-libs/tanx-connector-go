@@ -12,7 +12,6 @@ var (
 )
 
 
-
 // json decoding error
 type ErrJSONDecoding struct {
 	Err error

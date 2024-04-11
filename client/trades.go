@@ -30,6 +30,32 @@ type TradesPayload struct {
 	TakerType string  `json:"taker_type"`
 }
 
+/*
+{
+  "status": "success",
+  "message": "Retrieval Successful",
+  "payload": [
+    {
+      "id": 456142,
+      "price": 1336.63,
+      "amount": 0.0375,
+      "total": 50.123625,
+      "market": "ethusdc",
+      "created_at": 1667855520,
+      "taker_type": "sell"
+    },
+    {
+      "id": 456116,
+      "price": 1336.63,
+      "amount": 0.075,
+      "total": 100.24725,
+      "market": "ethusdc",
+      "created_at": 1667850041,
+      "taker_type": "sell"
+    }
+  ]
+}
+*/
 type TradesResponse struct {
 	Status  Status          `json:"status"`
 	Message string          `json:"message"`

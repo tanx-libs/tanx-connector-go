@@ -30,10 +30,10 @@ type InternalTransferInitiateResponse struct {
 	Payload InternalTransferInitiatePayload `json:"payload"`
 }
 
-func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTransferInitiateRequest) (InternalTransferInitiateResponse, error) {
+func (c *Client) internalTransferInitiate(ctx context.Context, opt InternalTransferInitiateRequest) (InternalTransferInitiateResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
-		return InternalTransferInitiateResponse{}, ErrNotLoggedIn
+		return InternalTransferInitiateResponse{}, err
 	}
 
 	reqBody, err := json.Marshal(opt)
@@ -59,7 +59,6 @@ func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTrans
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferInitiateResponse)
 
 	if internalTransferInitiateResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return InternalTransferInitiateResponse{}, &ErrClient{
 				Status: resp.StatusCode,
@@ -81,7 +80,6 @@ func (c *Client) InternalTransferInitiate(ctx context.Context, opt InternalTrans
 	return internalTransferInitiateResponse, nil
 }
 
-// internal transfer process
 type Signature struct {
 	R string `json:"r"`
 	S string `json:"s"`
@@ -95,6 +93,22 @@ type InternalTransferProcessRequest struct {
 	MsgHash         string    `json:"msg_hash"`
 }
 
+/*
+	{
+	    "status": "success",
+	    "message": "Internal transfer processed successfully",
+	    "payload": {
+	        "client_reference_id": "795278363509343",
+	        "amount": "1",
+	        "currency": "usdc",
+	        "from_address": "0x1234",
+	        "destination_address": "0x1234",
+	        "status": "success",
+	        "created_at": "2023-07-12T04:42:22.639933Z",
+	        "updated_at": "2023-07-12T04:43:37.373071Z"
+	    }
+	}
+*/
 type InternalTransferProcessResponse struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`
@@ -110,10 +124,10 @@ type InternalTransferProcessResponse struct {
 	} `json:"payload"`
 }
 
-func (c *Client) InternalTransferProcess(ctx context.Context, opt InternalTransferProcessRequest) (InternalTransferProcessResponse, error) {
+func (c *Client) internalTransferProcess(ctx context.Context, opt InternalTransferProcessRequest) (InternalTransferProcessResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
-		return InternalTransferProcessResponse{}, ErrNotLoggedIn
+		return InternalTransferProcessResponse{}, err
 	}
 
 	reqBody, err := json.Marshal(opt)
@@ -160,9 +174,12 @@ func (c *Client) InternalTransferProcess(ctx context.Context, opt InternalTransf
 	return internalTransferProcessResponse, nil
 }
 
-// internal transfer create
+/*
+Process an internal transfer between two users.
+Please note that this is a private 🔒 route, which means it needs to be authorized by the account initiating this request.
+*/
 func (c *Client) InternalTransferCreate(ctx context.Context, starkPrivateKey string, opt InternalTransferInitiateRequest) (InternalTransferProcessResponse, error) {
-	internalTransferInitiateResponse, err := c.InternalTransferInitiate(ctx, opt)
+	internalTransferInitiateResponse, err := c.internalTransferInitiate(ctx, opt)
 	if err != nil {
 		return InternalTransferProcessResponse{}, err
 	}
@@ -186,7 +203,7 @@ func (c *Client) InternalTransferCreate(ctx context.Context, starkPrivateKey str
 		MsgHash: internalTransferInitiateResponse.Payload.MsgHash,
 	}
 
-	internalTransferProcessResponse, err := c.InternalTransferProcess(ctx, internalTransferProcessRequest)
+	internalTransferProcessResponse, err := c.internalTransferProcess(ctx, internalTransferProcessRequest)
 	if err != nil {
 		return InternalTransferProcessResponse{}, err
 	}
@@ -194,7 +211,22 @@ func (c *Client) InternalTransferCreate(ctx context.Context, starkPrivateKey str
 	return internalTransferProcessResponse, nil
 }
 
-// internal transfer get
+/*
+	{
+	    "status": "success",
+	    "message": "Fetched internal transfer successfully",
+	    "payload": {
+	        "client_reference_id": "18713401936769560",
+	        "amount": "1",
+	        "currency": "usdc",
+	        "from_address": "0xF",
+	        "destination_address": "0x4",
+	        "status": "success",
+	        "created_at": "2023-07-10T11:36:57.820203Z",
+	        "updated_at": "2023-07-10T11:51:54.937498Z"
+	    }
+	}
+*/
 type InternalTransferGetResponse struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`
@@ -210,10 +242,14 @@ type InternalTransferGetResponse struct {
 	} `json:"payload"`
 }
 
+/*
+etrieve details of a single transfer using this endpoint.
+Please note that this is a Private 🔒 route which means it needs to be authorised by the account initiating this request.
+*/
 func (c *Client) InternalTransferGet(ctx context.Context, clientReferenceId string) (InternalTransferGetResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
-		return InternalTransferGetResponse{}, ErrNotLoggedIn
+		return InternalTransferGetResponse{}, err
 	}
 
 	url := c.internalTransferGetURL.JoinPath(clientReferenceId)
@@ -236,7 +272,6 @@ func (c *Client) InternalTransferGet(ctx context.Context, clientReferenceId stri
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferGetResponse)
 
 	if internalTransferGetResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return InternalTransferGetResponse{}, &ErrClient{
 				Status: resp.StatusCode,
@@ -258,7 +293,16 @@ func (c *Client) InternalTransferGet(ctx context.Context, clientReferenceId stri
 	return internalTransferGetResponse, nil
 }
 
-// internal transfer user
+/*
+	{
+	    "status": "success",
+	    "message": "User exists",
+	    "payload": {
+	        "destination_address": "0x4",
+	        "exists": true
+	    }
+	}
+*/
 type InternalTransferUserResponse struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`
@@ -274,10 +318,14 @@ type InternalTransferUserRequest struct {
 	DestinationAddress string `json:"destination_address"`
 }
 
+/*
+Retrieve details on whether a user exists at the specified destination address using this endpoint.
+Please note that this is a Private 🔒 route which means it needs to be authorised by the account initiating this request.
+*/
 func (c *Client) InternalTransferUser(ctx context.Context, opt InternalTransferUserRequest) (InternalTransferUserResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
-		return InternalTransferUserResponse{}, ErrNotLoggedIn
+		return InternalTransferUserResponse{}, err
 	}
 
 	reqBody, err := json.Marshal(opt)
@@ -302,7 +350,6 @@ func (c *Client) InternalTransferUser(ctx context.Context, opt InternalTransferU
 	var internalTransferUserResponse InternalTransferUserResponse
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferUserResponse)
 	if internalTransferUserResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return InternalTransferUserResponse{}, &ErrClient{
 				Status: resp.StatusCode,
@@ -324,7 +371,39 @@ func (c *Client) InternalTransferUser(ctx context.Context, opt InternalTransferU
 	return internalTransferUserResponse, nil
 }
 
-// internal transfer list
+/*
+	{
+	    "status": "success",
+	    "message": "Fetched internal transfers successfully",
+	    "payload": {
+	        "internal_transfers": [
+	            {
+	                "client_reference_id": "18713401936769560",
+	                "amount": "10",
+	                "currency": "usdc",
+	                "from_address": "0xF",
+	                "destination_address": "0x4",
+	                "status": "success",
+	                "created_at": "2023-07-10T11:36:57.820203Z",
+	                "updated_at": "2023-07-10T11:51:54.937498Z"
+	            },
+	            {
+	                "client_reference_id": "3904693199068586",
+	                "amount": "1",
+	                "currency": "usdc",
+	                "from_address": "0xF",
+	                "destination_address": "0x5",
+	                "status": "pending",
+	                "created_at": "2023-07-10T07:32:32.933317Z",
+	                "updated_at": "2023-07-10T07:32:32.933340Z"
+	            }
+		],
+	    "total_count": 2,
+	    "limit": 20,
+	    "offset": 1
+	  }
+	}
+*/
 type InternalTransferListResponse struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`
@@ -347,10 +426,14 @@ type InternalTransferListRequest struct {
 	Offset int `json:"offset"`
 }
 
+/*
+Retrieve details of all transfers for a user using this endpoint. 
+Please note that this is a Private 🔒 route which means it needs to be authorized by the account initiating this request.
+*/
 func (c *Client) InternalTransferList(ctx context.Context, opt InternalTransferListRequest) (InternalTransferListResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
-		return InternalTransferListResponse{}, ErrNotLoggedIn
+		return InternalTransferListResponse{}, err
 	}
 
 	reqBody, err := json.Marshal(opt)
@@ -376,7 +459,6 @@ func (c *Client) InternalTransferList(ctx context.Context, opt InternalTransferL
 	err = json.NewDecoder(resp.Body).Decode(&internalTransferListResponse)
 
 	if internalTransferListResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return InternalTransferListResponse{}, &ErrClient{
 				Status: resp.StatusCode,

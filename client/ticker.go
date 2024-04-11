@@ -25,12 +25,57 @@ type TickerPayload struct {
 	Ticker Ticker `json:"ticker"`
 }
 
+/*
+{
+  "status": "success",
+  "message": "Retrieval Successful",
+  "payload": {
+    "ethusdc": {
+      "at": "1660636224",
+      "ticker": {
+        "at": "1660636224",
+        "avg_price": "0.0",
+        "high": "0.0",
+        "last": "1697.0",
+        "low": "0.0",
+        "open": "0.0",
+        "price_change_percent": "+0.00%",
+        "volume": "0.0",
+        "amount": "0.0"
+      }
+    }
+  }
+}
+*/
 type TickerResponse struct {
 	Status  Status        `json:"status"`
 	Message string        `json:"message"`
 	Payload TickerPayload `json:"payload"`
 }
 
+
+/*
+{
+  "status": "success",
+  "message": "Retrieval Successful",
+  "payload": {
+    "ethusdc": {
+      "at": "1660636224",
+      "ticker": {
+        "at": "1660636224",
+        "avg_price": "0.0",
+        "high": "0.0",
+        "last": "1697.0",
+        "low": "0.0",
+        "open": "0.0",
+        "price_change_percent": "+0.00%",
+        "volume": "0.0",
+        "amount": "0.0"
+      }
+    }
+  }
+}
+*/
 type AllTickerResponse struct {
 	Status  Status                   `json:"status"`
 	Message string                   `json:"message"`

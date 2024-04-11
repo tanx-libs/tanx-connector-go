@@ -8,19 +8,25 @@ import (
 )
 
 type SubUnsub string
+
+const (
+	SUBSCRIBE   SubUnsub = "subscribe"
+	UNSUBSCRIBE SubUnsub = "unsubscribe"
+)
+
 type Base string
 
 const (
 	MAINET  Base = "wss://api.tanx.fi"
 	TESTNET Base = "wss://api-testnet.tanx.fi"
+)
 
-	PUBLIC_PATH   = "/public"
-	PRIVATE_PATH  = "/private"
-	
+const (
+	PUBLIC_PATH  = "/public"
+	PRIVATE_PATH = "/private"
+
 	SUB_UNSUB_SUCCESS = "success"
 	SUB_UNSUB_ERROR   = "error"
-	SUBSCRIBE   SubUnsub = "subscribe"
-	UNSUBSCRIBE SubUnsub = "unsubscribe"
 )
 
 type Wsclient struct {
@@ -28,32 +34,30 @@ type Wsclient struct {
 	publicURL  string
 	privateURL string
 
-	accessToken     string
+	accessToken  string
 	refreshToken string
 }
 
-// TODO error handling for wsclient urls
+
 func New(baseURL Base) *Wsclient {
 	return &Wsclient{
 		baseURL:    string(baseURL),
 		publicURL:  string(baseURL) + PUBLIC_PATH,
 		privateURL: string(baseURL) + PRIVATE_PATH,
 
-		accessToken: "",
+		accessToken:  "",
 		refreshToken: "",
 	}
 }
 
-func (c *Wsclient)SetJwt(jwtToken string, refreshToken string) {
+func (c *Wsclient) SetJwt(jwtToken string, refreshToken string) {
 	c.accessToken = jwtToken
 	c.refreshToken = refreshToken
 }
 
 var (
-	// WebsocketTimeout is an interval for sending ping/pong messages if WebsocketKeepalive is enabled
 	WebsocketTimeout = time.Second * 60
 
-	// WebsocketKeepalive enables sending ping/pong messages to check the connection stability
 	WebsocketKeepalive = false
 )
 

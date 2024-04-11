@@ -7,6 +7,20 @@ import (
 	"net/http"
 )
 
+
+type PNLPayload struct {
+	Currency            string `json:"currency"`
+	PnlCurrency         string `json:"pnl_currency"`
+	TotalCredit         string `json:"total_credit"`
+	TotalDebit          string `json:"total_debit"`
+	TotalCreditValue    string `json:"total_credit_value"`
+	TotalDebitValue     string `json:"total_debit_value"`
+	AverageBuyPrice     string `json:"average_buy_price"`
+	AverageSellPrice    string `json:"average_sell_price"`
+	AverageBalancePrice string `json:"average_balance_price"`
+	TotalBalanceValue   string `json:"total_balance_value"`
+}
+
 /*
 {
   "status": "success",
@@ -39,25 +53,16 @@ import (
   ]
 }
 */
-type PNLPayload struct {
-	Currency            string `json:"currency"`
-	PnlCurrency         string `json:"pnl_currency"`
-	TotalCredit         string `json:"total_credit"`
-	TotalDebit          string `json:"total_debit"`
-	TotalCreditValue    string `json:"total_credit_value"`
-	TotalDebitValue     string `json:"total_debit_value"`
-	AverageBuyPrice     string `json:"average_buy_price"`
-	AverageSellPrice    string `json:"average_sell_price"`
-	AverageBalancePrice string `json:"average_balance_price"`
-	TotalBalanceValue   string `json:"total_balance_value"`
-}
-
 type PNLResponse struct {
 	Status  Status       `json:"status"`
 	Message string       `json:"message"`
 	Payload []PNLPayload `json:"payload"`
 }
 
+/*
+Retrieve details of a user’s portfolio i.e., the profit and loss incurred in the various markets.
+Please note that this is a Private 🔒 route which means it needs to be authorised by the account initiating this request.
+*/
 func (c *Client) PNL(ctx context.Context) (PNLResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {

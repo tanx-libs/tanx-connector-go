@@ -15,13 +15,29 @@ type ProfilePayload struct {
 	StarkKey   string `json:"stark_key"`
 }
 
+/*
+{
+  "status": "success",
+  "message": "Successful",
+  "payload": {
+    "name": "USER NAME",
+    "customer_id": "27",
+    "img": null,
+    "username": "guthal",
+    "stark_key": "0x70f41ce6797eb444c9dc95a907....8aa592adf8f1fe3ab75317f7096d38"
+  }
+}
+*/
 type ProfileResponse struct {
 	Status  Status         `json:"status"`
 	Message string         `json:"message"`
 	Payload ProfilePayload `json:"payload"`
 }
 
-// Retrieve details of a user’s portfolio
+/*
+Retrieve details of a user’s portfolio i.e., the profit and loss incurred in the various markets.
+Please note that this is a Private 🔒 rroute which means it needs to be authorized by the account initiating this request.
+*/
 func (c *Client) Profile(ctx context.Context) (ProfileResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {

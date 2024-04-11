@@ -7,6 +7,21 @@ import (
 	"net/http"
 )
 
+/*
+success response
+{
+	"status": "success",
+	"message": "Working fine!",
+	"payload": ""
+}
+
+error response
+{
+  "status": "error",
+  "message": "Invalid symbol.",
+  "payload": {}
+}
+*/
 type HealthResponse struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`

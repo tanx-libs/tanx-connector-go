@@ -126,24 +126,23 @@ type Client struct {
 	orderBookURL   *url.URL
 	tradesURL      *url.URL
 
-	// login
+
 	nonceURL        *url.URL
 	loginURL        *url.URL
 	refreshTokenURL *url.URL
 
-	// user
+	
 	profileURL *url.URL
 	balanceURL *url.URL
 	pnlURL     *url.URL
 
-	// order
 	orderURL       *url.URL
 	orderNonceURL  *url.URL
 	orderCreateURL *url.URL
 	orderCancelURL *url.URL
 	tradesListURL  *url.URL
 
-	// deposit
+	
 	coinURL                   *url.URL
 	vaultIDURL                *url.URL
 	networkConfigURL          *url.URL
@@ -151,14 +150,14 @@ type Client struct {
 	crossChainDepositStartURL *url.URL
 	listDepositsURL           *url.URL
 
-	// internal transfer
+	
 	internalTransferInitiateURL *url.URL
 	internalTransferProcessURL  *url.URL
 	internalTransferGetURL      *url.URL
 	internalTransferUserURL     *url.URL
 	internalTransferListURL     *url.URL
 
-	// withdraw
+	
 	startNormalWithdrawalURL    *url.URL
 	validateNormalWithdrawalURL *url.URL
 	startFastWithdrawalURL      *url.URL
@@ -184,6 +183,7 @@ func New(base BaseURL) (*Client, error) {
 	loginurl := baseurl.JoinPath(LOGIN_ENDPOINT)
 	refreshTokenurl := baseurl.JoinPath(REFRESH_TOKEN_ENDPOINT)
 
+	
 	profileurl := baseurl.JoinPath(PROFILE_ENDPOINT)
 	balanceurl := baseurl.JoinPath(BALANCE_ENDPOINT)
 	pnlurl := baseurl.JoinPath(PNL_ENDPOINT)
@@ -267,7 +267,6 @@ func New(base BaseURL) (*Client, error) {
 // check auth
 func (c *Client) CheckAuth() error {
 	if c.jwtToken == "" || c.refreshToken == "" {
-		// throw error
 		return ErrNotLoggedIn
 	}
 

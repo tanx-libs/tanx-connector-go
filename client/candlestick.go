@@ -31,6 +31,33 @@ type CandleStickOptions struct {
 	EndTime   int64
 }
 
+/*
+{
+  "status": "success",
+  "message": "Retrieval Successful",
+  "payload": [
+    [1660634520, 1697, 1697, 1697, 1697, 0],
+    [1660634520, 1697, 1697, 1697, 1697, 0],
+    [1660634520, 1697, 1697, 1697, 1697, 0]
+  ]
+}
+
+Note: Kline payload item as array of numbers
+
+Example: [1660634520, 0.0839, 0.0921, 0.0781, 0.0845, 0.5895]
+
+1. Timestamp.
+
+2. Open price.
+
+3. Max price.
+
+4. Min price.
+
+5. Last price.
+
+6. Period volume
+*/
 type CandleStickResponse struct {
 	Status  Status      `json:"status"`
 	Message string      `json:"message"`

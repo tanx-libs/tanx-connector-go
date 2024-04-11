@@ -29,7 +29,7 @@ func TestDepositFromPolygonNetwork(t *testing.T) {
 	balance := "10"
 
 	// setting balance of 10
-	balanceInWei := ToWei(balance, 18)
+	balanceInWei := toWei(balance, 18)
 
 	// simulated backend
 	simBack := simulated.NewBackend(types.GenesisAlloc{

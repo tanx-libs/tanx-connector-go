@@ -5,10 +5,6 @@ import (
 	"fmt"
 )
 
-type KlineEvent map[string][]float64
-
-type KlineEventHandler func(event *KlineEvent)
-
 type KlinePeriod string
 
 const (
@@ -26,7 +22,13 @@ const (
 	PERIOD_1W  KlinePeriod = "1w"
 )
 
-// SubUnsubKlineTopics returns a SubUnsubRequest to subscribe or unsubscribe to Kline data
+// helper function to form subscribe or unsubscribe request for kline topics
+/*
+{
+  "event": "subscribe",
+  "streams": ["btcusdc.kline-5m"]
+}
+*/
 func SubUnsubKlineTopics(subUnsub SubUnsub, symbol map[string]KlinePeriod) SubUnsubRequest {
 	topics := make([]string, len(symbol))
 	i := 0
@@ -41,7 +43,16 @@ func SubUnsubKlineTopics(subUnsub SubUnsub, symbol map[string]KlinePeriod) SubUn
 	}
 }
 
-// Kline subscribes to Kline data
+/*
+{
+  "btcusdc.kline-5m": [1659024300, 23935.01, 23935.01, 23935.01, 23935.01, 0]
+}
+*/
+type KlineEvent map[string][]float64
+
+type KlineEventHandler func(event *KlineEvent)
+
+// connects you to kline stream
 func (c *Wsclient) Kline(symbol map[string]KlinePeriod, klineEventHandler KlineEventHandler, subUnsubEventHandler SubUnsubEventHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, subUnsubCh chan SubUnsubRequest, err error) {
 	config := &Config{
 		endpoint:        c.publicURL,

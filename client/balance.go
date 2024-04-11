@@ -14,13 +14,28 @@ type BalancePayload struct {
 	DepositAddress string   `json:"deposit_address"`
 }
 
+/*
+{
+  "status": "success",
+  "message": "Retrieved Successfully",
+  "payload": {
+    "currency": "eth",
+    "balance": "0.1959644",
+    "locked": "0.0",
+    "deposit_address": null
+  }
+}
+*/
 type BalanceResponse struct {
 	Status  Status         `json:"status"`
 	Message string         `json:"message"`
 	Payload BalancePayload `json:"payload"`
 }
 
-// Retrieve details of a specific user’s balance
+/*
+Retrieve details of a specific user’s balance. 
+Please note that this is a Private 🔒 route which means it needs to be authorized by the account initiating this request.
+*/
 func (c *Client) Balance(ctx context.Context, currency Currency) (BalanceResponse, error) {
 	err := c.CheckAuth()
 	if err != nil {
@@ -49,7 +64,6 @@ func (c *Client) Balance(ctx context.Context, currency Currency) (BalanceRespons
 	err = json.NewDecoder(resp.Body).Decode(&balanceResponse)
 
 	if balanceResponse.Status == ERROR {
-		// handling 4xx and 5xx errors
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return BalanceResponse{}, &ErrClient{
 				Status: resp.StatusCode,
