@@ -503,7 +503,7 @@ func (c *Client) OrderCancel(ctx context.Context, orderID int) (OrderCancelRespo
 		return OrderCancelResponse{}, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.orderCancelURL.String(), bytes.NewReader(requestBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.orderCancelURL.String(), bytes.NewReader(requestBody))
 	if err != nil {
 		return OrderCancelResponse{}, err
 	}
